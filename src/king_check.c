@@ -5,42 +5,56 @@
 #include "king_check.h"
 #include "move_check.h"
 
-bool is_square_attacked(Board *board, Coords pos) {
+bool is_square_attacked_by(const Board *board, Coords pos, Color attacker_color) {
     unsigned int row, col;
-    Coords curr_coords;
-    bool target_is_empty = is_empty_square(*board, pos);
-    Color target_color = get_piece(*board, pos).color;
 
     for (row = 0; row < BOARD_SIZE; row++) {
         for (col = 0; col < BOARD_SIZE; col++) {
-            curr_coords = create_coords(row, col);
-            if (!is_empty_square(*board, curr_coords)) {
-                Piece attacker = get_piece(*board, curr_coords);
-                // The target square shouldn't have the same color as the attacker
-                if (!target_is_empty && attacker.color == target_color) {
-                    continue;
-                }
-                // All pieces (different from the Pawn) valid moves can be an attack
-                // So, we treat the pawn differently 
-                if (attacker.name == PAWN) {
-                    int delta_row = (attacker.color == WHITE) ? -1 : 1;
-                    int row_diff = pos.row - curr_coords.row;
-                    int col_diff = pos.col - curr_coords.col;
+            Coords source = create_coords(row, col);
+            Piece attacker = get_piece(*board, source);
 
-                    if (row_diff == delta_row && abs(col_diff) == 1) {
-                        return true;
-                    }
-                } else if (is_valid_move(board, curr_coords, pos)) {
+            if (attacker.name == NONE || attacker.color != attacker_color) {
+                continue;
+            }
+
+            if (attacker.name == PAWN) {
+                int delta_row = (attacker.color == WHITE) ? -1 : 1;
+                int row_diff = (int)pos.row - (int)source.row;
+                int col_diff = (int)pos.col - (int)source.col;
+
+                if (row_diff == delta_row && abs(col_diff) == 1) {
                     return true;
                 }
+            } else if(
+                (attacker.name == KNIGHT &&
+                is_knight_valid_move(board, source, pos)) ||
+                (attacker.name == BISHOP &&
+                is_bishop_valid_move(board, source, pos)) ||
+                (attacker.name == ROOK &&
+                is_rook_valid_move(board, source, pos)) ||
+                (attacker.name == QUEEN &&
+                is_queen_valid_move(board, source, pos)) ||
+                (attacker.name == KING &&
+                is_king_valid_move(board, source, pos))
+            ) {
+                return true;
             }
-            
         }
     }
     return false;
 }
 
-void find_king(Board *board, Color color, Coords *coords, bool *found) {
+bool is_square_attacked(const Board *board, Coords pos) {
+    if (!is_empty_square(*board, pos)) {
+        return is_square_attacked_by(
+            board, pos, get_opponent_color(get_piece(*board, pos).color));
+    }
+
+    return is_square_attacked_by(board, pos, BLACK) ||
+           is_square_attacked_by(board, pos, WHITE);
+}
+
+void find_king(const Board *board, Color color, Coords *coords, bool *found) {
     Coords curr_coords;
     Piece piece;
     unsigned int row, col;
@@ -59,7 +73,7 @@ void find_king(Board *board, Color color, Coords *coords, bool *found) {
     *found = false;
 }
 
-bool is_king_in_check(Board *board, Color color) {
+bool is_king_in_check(const Board *board, Color color) {
     Coords king_pos;
     bool king_found;
     find_king(board, color, &king_pos, &king_found);

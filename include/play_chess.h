@@ -3,7 +3,7 @@
 
 #include "chessboard.h"
 
-#define DEPTH 4
+#define DEPTH 5
 
 typedef void (*FuncGetMove)(Board *, Color, Coords *, Coords *);
 

@@ -20,14 +20,30 @@ typedef struct Piece {
     Color color;
 } Piece;
 
-typedef struct Board {
-    Piece squares[BOARD_SIZE][BOARD_SIZE];
-} Board;
-
 typedef struct Coords {
     unsigned int row, col;
 } Coords;
 
+struct _enPassantState {
+    bool flag;
+    Coords pos; // the actual position of the attacked pawn
+};
+
+struct _oneColorRoqueState {
+    bool king;
+    bool rook_a;
+    bool rook_h;
+};
+struct _roqueState {
+    struct _oneColorRoqueState black;
+    struct _oneColorRoqueState white;
+};
+
+typedef struct Board {
+    Piece squares[BOARD_SIZE][BOARD_SIZE];
+    struct _enPassantState enpassant;
+    struct _roqueState roque;
+} Board;
 
 // Color
 Color get_opponent_color(Color color);

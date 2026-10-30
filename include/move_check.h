@@ -11,5 +11,6 @@ bool is_bishop_valid_move(const Board *board, Coords src_pos, Coords dest_pos);
 bool is_queen_valid_move(const Board *board, Coords src_pos, Coords dest_pos);
 bool is_king_valid_move(const Board *board, Coords src_pos, Coords dest_pos);
 bool is_free_range(const Board *board, Coords src_pos, Coords dest_pos, int delta_row, int delta_col);
+bool is_pawn_2steps_move(const Board *board, Coords src_pos, Coords dest_pos);
 
 #endif

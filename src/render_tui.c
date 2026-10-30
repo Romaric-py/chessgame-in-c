@@ -63,7 +63,7 @@ void display_board_with_hint(Board *board, Coords src_pos) {
         for (unsigned int col = 0; col < BOARD_SIZE; col++) {
             Coords pos = create_coords(row, col);
             if (is_legal_move(board, src_pos, pos) || are_coords_equal(pos, src_pos)) {
-                printf("\e[0;46;30m");
+                printf("\e[0;46;30m"); // black on cyan
             }
             else if ((row + col) % 2 == 0) {
                 printf("\e[0;107;30m"); // black on white

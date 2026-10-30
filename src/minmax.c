@@ -1,13 +1,23 @@
 #include "minmax.h"
 #include "legal_move.h"
 #include "game_status.h"
+#include "special_move.h"
 #include "utils.h"
+
+static void apply_search_move(Board *board, Coords src_pos, Coords dest_pos) {
+    move(board, src_pos, dest_pos);
+
+    if (can_promote_pawn(board, dest_pos, dest_pos)) {
+        Piece pawn = get_piece(*board, dest_pos);
+        set_piece(board, dest_pos, create_piece(QUEEN, pawn.color));
+    }
+}
 
 int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth) {
     int best_score = -INFINITY, score;
     Coords from_pos, to_pos, best_src_pos, best_dest_pos;
 
-    MoveList legal_moves = generate_legal_moves(board, curr_color);
+    MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
 
     for (unsigned int i = 0; i < legal_moves.count; i++) {
@@ -38,7 +48,7 @@ int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coo
 int evaluate_move(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth) {
     
     Board board_copy = clone_board(board);
-    move(&board_copy, src_pos, dest_pos);
+    apply_search_move(&board_copy, src_pos, dest_pos);
 
     //* Note: decrementing depth
     if (depth <= 0 || is_end_game(&board_copy)) {
@@ -59,9 +69,9 @@ int _present_pieces_score(Board *board, Color color) {
             if (piece.color == color) {
                 if (piece.name == PAWN) score += 1;
                 else if (piece.name == ROOK) score += 5;
-                else if (piece.name == BISHOP) score += 4;
+                else if (piece.name == BISHOP) score += 3;
                 else if (piece.name == KNIGHT) score += 3;
-                else if (piece.name == QUEEN) score += 8;
+                else if (piece.name == QUEEN) score += 9;
             }
         }
     }
@@ -79,7 +89,7 @@ int _board_score(Board *board, Color color) {
 
     int extra = 0;
     if (color_game_status == GAME_CHECK) {
-        extra -= 20;
+        extra -= 200;
     }
     return _present_pieces_score(board, color) + extra;
 
@@ -99,7 +109,7 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
     int best_score = -INFINITY, score;
     Coords from_pos, to_pos, best_src_pos, best_dest_pos;
 
-    MoveList legal_moves = generate_legal_moves(board, curr_color);
+    MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
     bool max_step = (curr_color == color_max);
 
@@ -156,7 +166,7 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
 /* This version that enables the use of many cpu at once, was written by GPT 5.5 Luna via VS Code Copilot SDK
 */
 int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth) {
-    MoveList legal_moves = generate_legal_moves(board, curr_color);
+    MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
 
     int best_score = (curr_color == color_max) ? -INFINITY : INFINITY;
@@ -201,7 +211,7 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *
 int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth, int alpha, int beta) {
     
     Board board_copy = clone_board(board);
-    move(&board_copy, src_pos, dest_pos);
+    apply_search_move(&board_copy, src_pos, dest_pos);
 
     //* Note: decrementing depth
     if (depth <= 0 || is_end_game(&board_copy)) {

@@ -4,11 +4,16 @@
 #include "chessboard.h"
 #include "move_check.h"
 #include "utils.h"
+#include "special_move.h"
 
 
 bool is_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
+    
     switch (get_piece(*board, src_pos).name) {
         case PAWN:
+            if (is_enpassant_move(board, src_pos, dest_pos)) {
+                return true;
+            }
             return is_pawn_valid_move(board, src_pos, dest_pos);
         case KNIGHT:
             return is_knight_valid_move(board, src_pos, dest_pos);
@@ -19,6 +24,9 @@ bool is_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
         case QUEEN:
             return is_queen_valid_move(board, src_pos, dest_pos);
         case KING:
+            if (is_roque_move(board, src_pos, dest_pos)) {
+                return true;
+            }
             return is_king_valid_move(board, src_pos, dest_pos);
         default:
             return false;
@@ -59,11 +67,20 @@ bool is_pawn_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
     The dest_pos column is the one on left or on the right of the src_pos one; the row is 
     the next row (depending on the color). The dest_pos square should not be empty and must 
     contains an opponent's piece.
+    Special: 
     */
     (
         (dest_pos.col == src_pos.col + 1 || dest_pos.col == src_pos.col - 1) &&
         (dest_pos.row == src_pos.row + delta_row) && (!is_empty_square(*board, dest_pos)) && (get_piece(*board, dest_pos).color == get_opponent_color(piece.color))
     );
+}
+
+bool is_pawn_2steps_move(const Board *board, Coords src_pos, Coords dest_pos) {
+    Piece piece = get_piece(*board, src_pos);
+    int delta_row = (piece.color == BLACK) ? 1 : -1;
+    return piece.name == PAWN && 
+        dest_pos.row == src_pos.row + 2 * delta_row &&
+        is_pawn_valid_move(board, src_pos, dest_pos);
 }
 
 bool is_knight_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {

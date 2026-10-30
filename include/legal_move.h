@@ -8,7 +8,7 @@
 bool is_legal_move(Board *board, Coords src_pos, Coords dest_pos);
 bool has_legal_move(Board *board, Color color);
 
-MoveList generate_legal_moves(Board *board, Color color);
+MoveList generate_legal_moves(Board *board, Color color, bool stop_at_first);
 
 MoveList generate_legal_moves_for_piece(Board *board, Color color, Coords pos, bool stop_at_first);
 MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos, bool stop_at_first);

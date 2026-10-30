@@ -38,7 +38,7 @@ int main(void) {
     fclose(file); */
     Color winner;
     bool draw;
-    play_chess(&winner, &draw, get_human_move, get_ai_move);
+    play_chess(&winner, &draw, get_human_move, get_human_move);
 
     if (!draw) {
         printf("The winner is %s\n", (winner == BLACK) ? "BLACK" : "WHITE");

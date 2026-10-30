@@ -133,9 +133,9 @@ MoveList generate_legal_moves_for_king(Board *board, Color color, Coords pos, bo
     // assumes pos contains a king
     MoveList movelist = create_movelist();
     
-    int deltas[8][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {1, -1}, {1, 0}, {1, 1}, {0, -1}, {0, 1}};
+    int deltas[10][2] = {{-1, -1}, {-1, 0}, {-1, 1}, {1, -1}, {1, 0}, {1, 1}, {0, -1}, {0, 1}, {0, 2}, {0, -2}}; // last two are for roque
 
-    for (unsigned int i = 0; i < 8; i++) {
+    for (unsigned int i = 0; i < 10; i++) {
         row = pos.row + deltas[i][0];
         col = pos.col + deltas[i][1];
 
@@ -250,5 +250,4 @@ MoveList generate_legal_moves(Board *board, Color color, bool stop_at_first) {
     }
     return movelist;
 }
-
 

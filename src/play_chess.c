@@ -11,6 +11,10 @@
 #include "minmax.h"
 #include "utils.h"
 
+
+// Three fold repetition implemented by GPT 5.6 Luna via VS Code Copilot SDK
+/* The structure is a dynamic array of PositionHistoryEntry */
+// begin
 typedef struct {
     Board board;
     Color color_to_move;
@@ -75,6 +79,9 @@ static bool is_threefold_repetition(
     }
     return occurrences >= 3;
 }
+// end
+
+/* The structure is a dynamic array of PositionHistoryEntry */
 
 void clear_stdin_buffer() {
     int c;
@@ -183,6 +190,13 @@ void make_pawn_promotion(Board *board, Coords pos, bool is_ai_turn) {
 }
 
 void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMove white_get_move, FILE *moves_file) {
+    //! DEBUG
+    printf("roque_black: king=%d, rook_a=%d, rook_h=%d; roque_white: king=%d, rook_a=%d, rook_h=%d\n",
+        board->roque.black.king, board->roque.black.rook_a, board->roque.black.rook_h,
+        board->roque.white.king, board->roque.white.rook_a, board->roque.white.rook_h
+    );
+
+    
     printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
     Coords src_pos, dest_pos;
     bool is_ai_turn = (color == BLACK);
@@ -210,6 +224,12 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
     }
 
     init_board(&board);
+    //! DEBUG: Set the board in a configuration where the white king can roque
+    board.squares[7][5] = EMPTY_PIECE;
+    board.squares[7][6] = EMPTY_PIECE;
+    board.squares[7][3] = EMPTY_PIECE;
+    board.squares[7][2] = EMPTY_PIECE;
+    board.squares[7][1] = EMPTY_PIECE;
 
     if (!add_position_to_history(&history, &history_count, &history_capacity, &board, WHITE)) {
         fclose(moves_file);
