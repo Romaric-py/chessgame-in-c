@@ -122,23 +122,26 @@ void read_coords(char *prompt, Coords *pos) {
     clear_stdin_buffer();
 }
 
-void get_human_move(Board *board, Color color, Coords *src_pos, Coords *dest_pos) {
+void get_human_move(Board *board, Color color, Move *move) {
     do {
         do {
-            read_coords("From", src_pos);
-        } while (get_piece(*board, *src_pos).color != color);
+            read_coords("From", &move->src);
+        } while (get_piece(*board, move->src).color != color);
 
         clear_screen();
-        display_board_with_hint(board, *src_pos);
-        read_coords("To", dest_pos);
+        display_board_with_hint(board, move->src);
+        read_coords("To", &move->dest);
         clear_screen();
         display_board(board);
 
-    } while (!is_legal_move(board, *src_pos, *dest_pos));
+    } while (!is_legal_move(board, move->src, move->dest));
+
+    move->is_capture = false;
+    move->promotion = NONE;
 }
 
-void get_ai_move(Board *board, Color color, Coords *src_pos, Coords *dest_pos) {
-    minmax_ab_parallel(board, color, color, src_pos, dest_pos, DEPTH);
+void get_ai_move(Board *board, Color color, Move *move) {
+    minmax_ab_parallel(board, color, color, move, DEPTH);
 }
 
 void choose_piece_name(PieceName *name) {
@@ -169,7 +172,7 @@ void choose_piece_name(PieceName *name) {
     }
 }
 
-void make_pawn_promotion(Board *board, Coords pos, bool is_ai_turn) {
+void make_pawn_promotion(Board *board, Coords pos, PieceName promotion, bool is_ai_turn) {
     // Promotion
     Piece piece = get_piece(*board, pos);
     bool can_promote_pawn = (
@@ -179,7 +182,9 @@ void make_pawn_promotion(Board *board, Coords pos, bool is_ai_turn) {
 
     if (can_promote_pawn) {
         PieceName new_name;
-        if (is_ai_turn) {
+        if (promotion != NONE) {
+            new_name = promotion;
+        } else if (is_ai_turn) {
             new_name = QUEEN;
         } else {
             choose_piece_name(&new_name);
@@ -198,15 +203,16 @@ void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMo
 
     
     printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
-    Coords src_pos, dest_pos;
+    Move move_to_play;
     bool is_ai_turn = (color == BLACK);
 
     FuncGetMove get_move = (color == BLACK) ? black_get_move : white_get_move;
-    get_move(board, color, &src_pos, &dest_pos);
+    get_move(board, color, &move_to_play);
 
-    write_move(moves_file, src_pos, dest_pos);
-    move(board, src_pos, dest_pos);
-    make_pawn_promotion(board, dest_pos, is_ai_turn);
+    write_move(moves_file, move_to_play.src, move_to_play.dest);
+    move(board, move_to_play.src, move_to_play.dest);
+    make_pawn_promotion(board, move_to_play.dest, move_to_play.promotion,
+                        is_ai_turn);
 }
 
 
@@ -225,11 +231,11 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
 
     init_board(&board);
     //! DEBUG: Set the board in a configuration where the white king can roque
-    board.squares[7][5] = EMPTY_PIECE;
-    board.squares[7][6] = EMPTY_PIECE;
-    board.squares[7][3] = EMPTY_PIECE;
-    board.squares[7][2] = EMPTY_PIECE;
-    board.squares[7][1] = EMPTY_PIECE;
+    // board.squares[7][5] = EMPTY_PIECE;
+    // board.squares[7][6] = EMPTY_PIECE;
+    // board.squares[7][3] = EMPTY_PIECE;
+    // board.squares[7][2] = EMPTY_PIECE;
+    // board.squares[7][1] = EMPTY_PIECE;
 
     if (!add_position_to_history(&history, &history_count, &history_capacity, &board, WHITE)) {
         fclose(moves_file);

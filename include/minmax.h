@@ -2,6 +2,7 @@
 #define MINMAX_H
 
 #include "chessboard.h"
+#include "movelist.h"
 
 #define INFINITY 6000
 
@@ -11,10 +12,10 @@ int evaluate_move(Board *board, Color color_max, Color curr_color, Coords src_po
 
 int evaluate_board(Board *board, Color color);
 
-int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth, int alpha, int beta);
+int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Move move, unsigned int depth, int alpha, int beta);
 
 int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth, int alpha, int beta);
 
-int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth);
+int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Move *best_move, unsigned int depth);
 
 #endif

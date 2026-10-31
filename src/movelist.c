@@ -1,7 +1,12 @@
 #include "movelist.h"
 
 Move create_move(Coords src, Coords dest) {
-    return (Move){.src = src, .dest = dest, .is_capture = false};
+    return (Move){
+        .src = src,
+        .dest = dest,
+        .is_capture = false,
+        .promotion = NONE
+    };
 }
 
 MoveList create_movelist() {

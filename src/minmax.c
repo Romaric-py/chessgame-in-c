@@ -4,12 +4,14 @@
 #include "special_move.h"
 #include "utils.h"
 
-static void apply_search_move(Board *board, Coords src_pos, Coords dest_pos) {
-    move(board, src_pos, dest_pos);
+static void apply_search_move(Board *board, Move move_to_apply) {
+    move(board, move_to_apply.src, move_to_apply.dest);
 
-    if (can_promote_pawn(board, dest_pos, dest_pos)) {
-        Piece pawn = get_piece(*board, dest_pos);
-        set_piece(board, dest_pos, create_piece(QUEEN, pawn.color));
+    if (can_promote_pawn(board, move_to_apply.dest, move_to_apply.dest)) {
+        Piece pawn = get_piece(*board, move_to_apply.dest);
+        PieceName promotion = move_to_apply.promotion == NONE
+            ? QUEEN : move_to_apply.promotion;
+        set_piece(board, move_to_apply.dest, create_piece(promotion, pawn.color));
     }
 }
 
@@ -48,7 +50,7 @@ int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coo
 int evaluate_move(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth) {
     
     Board board_copy = clone_board(board);
-    apply_search_move(&board_copy, src_pos, dest_pos);
+    apply_search_move(&board_copy, create_move(src_pos, dest_pos));
 
     //* Note: decrementing depth
     if (depth <= 0 || is_end_game(&board_copy)) {
@@ -117,7 +119,8 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
         from_pos = legal_moves.moves[i].src;
         to_pos = legal_moves.moves[i].dest;
 
-        score = evaluate_move_ab(board, color_max, curr_color, from_pos, to_pos, depth, alpha, beta);
+        score = evaluate_move_ab(board, color_max, curr_color,
+                                 legal_moves.moves[i], depth, alpha, beta);
 
         // Best score update                    
         if (
@@ -165,12 +168,13 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
 
 /* This version that enables the use of many cpu at once, was written by GPT 5.5 Luna via VS Code Copilot SDK
 */
-int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth) {
+int minmax_ab_parallel(Board *board, Color color_max, Color curr_color,
+                       Move *best_move, unsigned int depth) {
     MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
 
     int best_score = (curr_color == color_max) ? -INFINITY : INFINITY;
-    Coords best_src_pos, best_dest_pos;
+    Move selected_move;
     bool has_best = false;
 
     #pragma omp parallel for schedule(dynamic)
@@ -180,8 +184,7 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *
             board,
             color_max,
             curr_color,
-            move.src,
-            move.dest,
+            move,
             depth,
             -INFINITY,
             INFINITY
@@ -195,23 +198,23 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Coords *
 
             if (!has_best || is_better) {
                 best_score = score;
-                best_src_pos = move.src;
-                best_dest_pos = move.dest;
+                selected_move = move;
                 has_best = true;
             }
         }
     }
 
-    *src_pos = best_src_pos;
-    *dest_pos = best_dest_pos;
+    *best_move = selected_move;
     return best_score;
 }
 
 
-int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth, int alpha, int beta) {
+int evaluate_move_ab(Board *board, Color color_max, Color curr_color,
+                     Move move_to_apply, unsigned int depth, int alpha,
+                     int beta) {
     
     Board board_copy = clone_board(board);
-    apply_search_move(&board_copy, src_pos, dest_pos);
+    apply_search_move(&board_copy, move_to_apply);
 
     //* Note: decrementing depth
     if (depth <= 0 || is_end_game(&board_copy)) {
@@ -219,5 +222,8 @@ int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Coords src
     }
 
     Color opponent_color = get_opponent_color(curr_color);
-    return minmax_ab(&board_copy, color_max, opponent_color, &src_pos, &dest_pos, depth-1, alpha, beta);
+    Coords src_pos = move_to_apply.src;
+    Coords dest_pos = move_to_apply.dest;
+    return minmax_ab(&board_copy, color_max, opponent_color,
+                     &src_pos, &dest_pos, depth-1, alpha, beta);
 }

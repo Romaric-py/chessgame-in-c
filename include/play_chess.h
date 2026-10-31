@@ -2,13 +2,14 @@
 #define PLAY_CHESS_H
 
 #include "chessboard.h"
+#include "movelist.h"
 
 #define DEPTH 5
 
-typedef void (*FuncGetMove)(Board *, Color, Coords *, Coords *);
+typedef void (*FuncGetMove)(Board *, Color, Move *);
 
-void get_human_move(Board *board, Color color, Coords *src_pos, Coords *dest_pos);
-void get_ai_move(Board *board, Color color, Coords *src_pos, Coords *dest_pos);
+void get_human_move(Board *board, Color color, Move *move);
+void get_ai_move(Board *board, Color color, Move *move);
 void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMove white_get_move);
 
 #endif

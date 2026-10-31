@@ -1,7 +1,26 @@
 #include "legal_move.h"
 #include "move_check.h"
 #include "king_check.h"
+#include "special_move.h"
 #include "utils.h"
+
+static void add_pawn_move(MoveList *movelist, Move move, Color color, bool stop_at_first) {
+    bool promotes = move.dest.row == ((color == WHITE) ? 0 : BOARD_SIZE - 1);
+
+    if (!promotes) {
+        add_move(movelist, move);
+        return;
+    }
+
+    const PieceName promotions[] = {QUEEN, ROOK, BISHOP, KNIGHT};
+    for (unsigned int i = 0; i < 4; i++) {
+        move.promotion = promotions[i];
+        add_move(movelist, move);
+        if (stop_at_first) {
+            return;
+        }
+    }
+}
 
 
 // Can be optimized: for example for a pawn, no need to test all squares but just the possible ones
@@ -78,7 +97,10 @@ MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos, bo
                 if (!is_empty_square(*board, dest_pos) && get_piece(*board, dest_pos).color == get_opponent_color(color)) {
                     move.is_capture = true;
                 }
-                add_move(&movelist, move);
+                if (is_enpassant_move(board, pos, dest_pos)) {
+                    move.is_capture = true;
+                }
+                add_pawn_move(&movelist, move, color, stop_at_first);
                 if (stop_at_first) return movelist;
             }
         }
@@ -90,7 +112,7 @@ MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos, bo
         dest_pos = create_coords(next_row, pos.col);
         if (is_legal_move(board, pos, dest_pos)) {
             move = create_move(pos, dest_pos);
-            add_move(&movelist, move);
+            add_pawn_move(&movelist, move, color, stop_at_first);
             if (stop_at_first) return movelist;
         }
     }
@@ -250,4 +272,3 @@ MoveList generate_legal_moves(Board *board, Color color, bool stop_at_first) {
     }
     return movelist;
 }
-

@@ -2,12 +2,13 @@
 #define MOVELIST_H
 
 #include "chessboard.h"
-#define MAX_MOVES 128
+#define MAX_MOVES 256
 
 typedef struct Move {
     Coords src;
     Coords dest;
     bool is_capture;
+    PieceName promotion;
 } Move;
 
 typedef struct {

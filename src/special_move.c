@@ -73,6 +73,8 @@ bool is_roque_move(const Board *board, Coords src_pos, Coords dest_pos) {
     (dest_pos.col == 2 || dest_pos.col == 6) &&
     // the king should not have moved
     roque_state.king &&
+    // the king should not be in check
+    !is_square_attacked_by(board, src_pos, get_opponent_color(color)) &&
     // the targeted rook should not have moved
     rook_not_moved &&
     // all squares between the targeted rook and the king should be empty (bounds not included)
