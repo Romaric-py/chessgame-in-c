@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include "minmax.h"
 #include "legal_move.h"
 #include "game_status.h"
@@ -15,9 +16,13 @@ static void apply_search_move(Board *board, Move move_to_apply) {
     }
 }
 
+// Legacy
 int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth) {
-    int best_score = -INFINITY, score;
+    int score;
     Coords from_pos, to_pos, best_src_pos, best_dest_pos;
+
+    bool max_step = (curr_color == color_max);
+    int best_score = max_step ? -INFINITY : INFINITY;
 
     MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
@@ -30,9 +35,9 @@ int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coo
 
         if (
             // min
-            ((curr_color != color_max) && (i == 0 || score < best_score)) ||
+            (!max_step && (i == 0 || score < best_score)) ||
             // max
-            ((curr_color == color_max) && (i == 0 || score > best_score))
+            (max_step && (i == 0 || score > best_score))
         ) {
             best_score = score;
             best_src_pos = from_pos;
@@ -107,20 +112,24 @@ alpha: best score ensured by the max color
 beta: best score ensured by the min color
  */
 
-int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth, int alpha, int beta) {
-    int best_score = -INFINITY, score;
-    Coords from_pos, to_pos, best_src_pos, best_dest_pos;
+int minmax_ab(Board *board, Color color_max, Color curr_color, Move *best_move, unsigned int depth, int alpha, int beta) {
+    Move selected_move; // the best move found so far
+    Move move;
+    int score;
+
+    bool max_step = (curr_color == color_max);
+    int best_score = max_step ? -INFINITY : INFINITY;
+    
 
     MoveList legal_moves = generate_legal_moves(board, curr_color, false);
     order_captures_first(&legal_moves);
-    bool max_step = (curr_color == color_max);
+    
 
     for (unsigned int i = 0; i < legal_moves.count; i++) {
-        from_pos = legal_moves.moves[i].src;
-        to_pos = legal_moves.moves[i].dest;
+        move = legal_moves.moves[i];
 
         score = evaluate_move_ab(board, color_max, curr_color,
-                                 legal_moves.moves[i], depth, alpha, beta);
+                                 move, depth, alpha, beta);
 
         // Best score update                    
         if (
@@ -130,22 +139,19 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
             (max_step && (i == 0 || score > best_score))
         ) {
             best_score = score;
-            best_src_pos = from_pos;
-            best_dest_pos = to_pos;
+            selected_move = move;
         }
 
         // Alpha beta prunning
         // min
         if (!max_step && score <= alpha) {
-            *src_pos = best_src_pos;
-            *dest_pos = best_dest_pos;
+            *best_move = selected_move;
             return best_score;
             
         }
         // max
         if (max_step && score >= beta) {
-            *src_pos = best_src_pos;
-            *dest_pos = best_dest_pos;
+            *best_move = selected_move;
             return best_score;
             
         }
@@ -160,8 +166,7 @@ int minmax_ab(Board *board, Color color_max, Color curr_color, Coords *src_pos, 
      
     }
     
-    *src_pos = best_src_pos;
-    *dest_pos = best_dest_pos;
+    *best_move = selected_move;
     return best_score;
 }
 
@@ -209,9 +214,7 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color,
 }
 
 
-int evaluate_move_ab(Board *board, Color color_max, Color curr_color,
-                     Move move_to_apply, unsigned int depth, int alpha,
-                     int beta) {
+int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Move move_to_apply, unsigned int depth, int alpha, int beta) {
     
     Board board_copy = clone_board(board);
     apply_search_move(&board_copy, move_to_apply);
@@ -222,8 +225,6 @@ int evaluate_move_ab(Board *board, Color color_max, Color curr_color,
     }
 
     Color opponent_color = get_opponent_color(curr_color);
-    Coords src_pos = move_to_apply.src;
-    Coords dest_pos = move_to_apply.dest;
     return minmax_ab(&board_copy, color_max, opponent_color,
-                     &src_pos, &dest_pos, depth-1, alpha, beta);
+                     &move_to_apply, depth-1, alpha, beta);
 }

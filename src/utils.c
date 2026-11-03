@@ -35,3 +35,42 @@ char *coords_to_string(Coords pos) {
     snprintf(buffer, sizeof(buffer), "%c%d", 'a' + pos.col, 8 - pos.row);
     return buffer;
 }
+
+void clear_stdin_buffer() {
+    int c;
+    while ((c = getchar()) != '\n' && c != EOF);
+}
+
+void clear_screen() {
+    printf("\033[2J\033[H");
+}
+
+void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos) {
+    fprintf(moves_file, "%s ", coords_to_string(src_pos));
+    fprintf(moves_file, "%s\n", coords_to_string(dest_pos));
+    fflush(moves_file);
+}
+
+// check if a position string is valid
+bool is_valid_string_pos(char *input) {
+    assert(strlen(input) == 2);
+
+    char col_char = input[0];
+    char row_char = input[1];
+
+    return (col_char >= 'a' && col_char <= 'h' && row_char >= '1' && row_char <= '8');
+}
+
+void read_coords(char *prompt, Coords *pos) {
+    char pos_str[3];
+
+    do {
+        printf("%s: ", prompt);
+    }
+    while (scanf("%2s", pos_str) != 1 ||
+        strlen(pos_str) != 2 ||
+        !is_valid_string_pos(pos_str));
+    
+    *pos = string_to_coords(pos_str);
+    clear_stdin_buffer();
+}

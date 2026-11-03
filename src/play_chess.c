@@ -10,117 +10,8 @@
 #include "game_status.h"
 #include "minmax.h"
 #include "utils.h"
+#include "position_history.h"
 
-
-// Three fold repetition implemented by GPT 5.6 Luna via VS Code Copilot SDK
-/* The structure is a dynamic array of PositionHistoryEntry */
-// begin
-typedef struct {
-    Board board;
-    Color color_to_move;
-} PositionHistoryEntry;
-
-static bool same_position(const PositionHistoryEntry *entry, const Board *board, Color color_to_move) {
-    if (entry->color_to_move != color_to_move) {
-        return false;
-    }
-
-    for (unsigned int row = 0; row < BOARD_SIZE; row++) {
-        for (unsigned int col = 0; col < BOARD_SIZE; col++) {
-            Piece entry_piece = entry->board.squares[row][col];
-            Piece board_piece = board->squares[row][col];
-            if (entry_piece.name != board_piece.name || entry_piece.color != board_piece.color) {
-                return false;
-            }
-        }
-    }
-    return true;
-}
-
-static bool add_position_to_history(
-    PositionHistoryEntry **history,
-    size_t *history_count,
-    size_t *history_capacity,
-    const Board *board,
-    Color color_to_move
-) {
-    if (*history_count == *history_capacity) {
-        size_t new_capacity = (*history_capacity == 0) ? 128 : *history_capacity * 2;
-        PositionHistoryEntry *new_history = realloc(
-            *history,
-            new_capacity * sizeof(*new_history)
-        );
-        if (new_history == NULL) {
-            return false;
-        }
-        *history = new_history;
-        *history_capacity = new_capacity;
-    }
-
-    (*history)[*history_count] = (PositionHistoryEntry){
-        .board = clone_board(board),
-        .color_to_move = color_to_move
-    };
-    (*history_count)++;
-    return true;
-}
-
-static bool is_threefold_repetition(
-    const PositionHistoryEntry *history,
-    size_t history_count,
-    const Board *board,
-    Color color_to_move
-) {
-    unsigned int occurrences = 0;
-    for (size_t i = 0; i < history_count; i++) {
-        if (same_position(&history[i], board, color_to_move)) {
-            occurrences++;
-        }
-    }
-    return occurrences >= 3;
-}
-// end
-
-/* The structure is a dynamic array of PositionHistoryEntry */
-
-void clear_stdin_buffer() {
-    int c;
-    while ((c = getchar()) != '\n' && c != EOF);
-}
-
-void clear_screen() {
-    printf("\033[2J\033[H");
-}
-
-void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos) {
-    fprintf(moves_file, "%s ", coords_to_string(src_pos));
-    fprintf(moves_file, "%s\n", coords_to_string(dest_pos));
-    fflush(moves_file);
-}
-
-// check if a position string is valid
-bool is_valid_string_pos(char *input) {
-    assert(strlen(input) == 2);
-
-    char col_char = input[0];
-    char row_char = input[1];
-
-    return (col_char >= 'a' && col_char <= 'h' && row_char >= '1' && row_char <= '8');
-}
-
-void read_coords(char *prompt, Coords *pos) {
-    char pos_str[3];
-
-    do {
-        printf("%s: ", prompt);
-    }
-    while (scanf("%2s", pos_str) != 1 ||
-        strlen(pos_str) != 2 ||
-        !is_valid_string_pos(pos_str));
-    
-    *pos = string_to_coords(pos_str);
-    clear_stdin_buffer();
-}
 
 void get_human_move(Board *board, Color color, Move *move) {
     do {
@@ -136,12 +27,9 @@ void get_human_move(Board *board, Color color, Move *move) {
 
     } while (!is_legal_move(board, move->src, move->dest));
 
+    // The following field values can be wrong but that doesn't matter since they are only used for ai move.
     move->is_capture = false;
     move->promotion = NONE;
-}
-
-void get_ai_move(Board *board, Color color, Move *move) {
-    minmax_ab_parallel(board, color, color, move, DEPTH);
 }
 
 void choose_piece_name(PieceName *name) {
@@ -172,6 +60,12 @@ void choose_piece_name(PieceName *name) {
     }
 }
 
+
+void get_ai_move(Board *board, Color color, Move *move) {
+    // minmax_ab_parallel(board, color, color, move, DEPTH);
+    minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
+}
+
 void make_pawn_promotion(Board *board, Coords pos, PieceName promotion, bool is_ai_turn) {
     // Promotion
     Piece piece = get_piece(*board, pos);
@@ -194,14 +88,7 @@ void make_pawn_promotion(Board *board, Coords pos, PieceName promotion, bool is_
     }
 }
 
-void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMove white_get_move, FILE *moves_file) {
-    //! DEBUG
-    printf("roque_black: king=%d, rook_a=%d, rook_h=%d; roque_white: king=%d, rook_a=%d, rook_h=%d\n",
-        board->roque.black.king, board->roque.black.rook_a, board->roque.black.rook_h,
-        board->roque.white.king, board->roque.white.rook_a, board->roque.white.rook_h
-    );
-
-    
+void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMove white_get_move, FILE *moves_file) {    
     printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
     Move move_to_play;
     bool is_ai_turn = (color == BLACK);
@@ -211,17 +98,14 @@ void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMo
 
     write_move(moves_file, move_to_play.src, move_to_play.dest);
     move(board, move_to_play.src, move_to_play.dest);
-    make_pawn_promotion(board, move_to_play.dest, move_to_play.promotion,
-                        is_ai_turn);
+    make_pawn_promotion(board, move_to_play.dest, move_to_play.promotion, is_ai_turn);
 }
 
 
 void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMove white_get_move) {
     Board board;
     FILE *moves_file = fopen("src/moves.txt", "w");
-    PositionHistoryEntry *history = NULL;
-    size_t history_count = 0;
-    size_t history_capacity = 0;
+    PositionHistory history = create_position_history();
 
     if (moves_file == NULL) {
         perror("src/moves.txt");
@@ -230,14 +114,8 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
     }
 
     init_board(&board);
-    //! DEBUG: Set the board in a configuration where the white king can roque
-    // board.squares[7][5] = EMPTY_PIECE;
-    // board.squares[7][6] = EMPTY_PIECE;
-    // board.squares[7][3] = EMPTY_PIECE;
-    // board.squares[7][2] = EMPTY_PIECE;
-    // board.squares[7][1] = EMPTY_PIECE;
 
-    if (!add_position_to_history(&history, &history_count, &history_capacity, &board, WHITE)) {
+    if (!add_position_to_history(&history, &board, WHITE)) {
         fclose(moves_file);
         *draw = true;
         return;
@@ -265,11 +143,14 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
         } else if (game_status == GAME_STALEMATE) {
             *draw = true;
             end_game = true;
-        } else if (!add_position_to_history(&history, &history_count, &history_capacity, &board, opponent_color)) {
+        } 
+        
+        // History management
+        else if (!add_position_to_history(&history, &board, opponent_color)) {
             fprintf(stderr, "Unable to record the position history\n");
             *draw = true;
             end_game = true;
-        } else if (is_threefold_repetition(history, history_count, &board, opponent_color)) {
+        } else if (is_threefold_repetition(&history, &board, opponent_color)) {
             *draw = true;
             end_game = true;
         } else {
@@ -277,6 +158,6 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
         }
     }
 
-    free(history);
+    free_position_history(&history);
     fclose(moves_file);
 }

@@ -39,10 +39,16 @@ struct _roqueState {
     struct _oneColorRoqueState white;
 };
 
+struct _kingPosition {
+    Coords black;
+    Coords white;
+};
+
 typedef struct Board {
     Piece squares[BOARD_SIZE][BOARD_SIZE];
     struct _enPassantState enpassant;
     struct _roqueState roque;
+    struct _kingPosition king_pos;
 } Board;
 
 // Color

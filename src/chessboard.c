@@ -7,6 +7,7 @@
 #include "special_move.h"
 
 static void _update_roque_flags(Board *board, Coords src_pos);
+static void _update_king_position(Board *board, Coords src_pos, Coords dest_pos);
 
 // Color
 Color get_opponent_color(Color color) {
@@ -106,6 +107,9 @@ void init_board(Board *board) {
 
         board->squares[row][3] = create_piece(QUEEN, color);
         board->squares[row][4] = create_piece(KING, color);
+
+        board->king_pos.black = create_coords(0, 4);
+        board->king_pos.white = create_coords(7, 4);
     }
     _init_flags(board);
 
@@ -117,6 +121,13 @@ Piece get_piece(Board board, Coords pos) {
 
 void set_piece(Board *board, Coords pos, Piece piece) {
     board->squares[pos.row][pos.col] = piece;
+    if (piece.name == KING) {
+        if (piece.color == BLACK) {
+            board->king_pos.black = pos;
+        } else {
+            board->king_pos.white = pos;
+        }
+    }
 }
 
 bool is_empty_square(Board board, Coords pos) {
@@ -158,6 +169,7 @@ void move(Board *board, Coords src_pos, Coords dest_pos) {
     
     if (valid || is_valid_move(board, src_pos, dest_pos)) {
         _update_roque_flags(board, src_pos);
+        _update_king_position(board, src_pos, dest_pos);
         set_piece(board, dest_pos, get_piece(*board, src_pos));
         set_piece(board, src_pos, EMPTY_PIECE);
     }
@@ -181,5 +193,18 @@ static void _update_roque_flags(Board *board, Coords src_pos) {
         } else if (src_pos.col == BOARD_SIZE - 1) {
             roque_state->rook_h = false;
         }
+    }
+}
+
+// Ensure the move is valid before calling this function
+static void _update_king_position(Board *board, Coords src_pos, Coords dest_pos) {
+    Piece piece = get_piece(*board, src_pos);
+
+    if (piece.name != KING) return;
+
+    if (piece.color == BLACK) {
+        board->king_pos.black = dest_pos;
+    } else {
+        board->king_pos.white = dest_pos;
     }
 }

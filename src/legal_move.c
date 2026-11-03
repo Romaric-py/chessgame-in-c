@@ -4,6 +4,7 @@
 #include "special_move.h"
 #include "utils.h"
 
+
 static void add_pawn_move(MoveList *movelist, Move move, Color color, bool stop_at_first) {
     bool promotes = move.dest.row == ((color == WHITE) ? 0 : BOARD_SIZE - 1);
 
@@ -11,7 +12,7 @@ static void add_pawn_move(MoveList *movelist, Move move, Color color, bool stop_
         add_move(movelist, move);
         return;
     }
-
+    // A pawn promotion corresponds to 4 different moves, one for each promotion piece type
     const PieceName promotions[] = {QUEEN, ROOK, BISHOP, KNIGHT};
     for (unsigned int i = 0; i < 4; i++) {
         move.promotion = promotions[i];
@@ -22,21 +23,6 @@ static void add_pawn_move(MoveList *movelist, Move move, Color color, bool stop_
     }
 }
 
-
-// Can be optimized: for example for a pawn, no need to test all squares but just the possible ones
-/* LEGAGY
-bool piece_has_legal_move(Board *board, Coords pos) {
-    unsigned int row, col;
-    // Brute force
-    for (row = 0; row < BOARD_SIZE; row++) {
-        for (col = 0; col < BOARD_SIZE; col++) {
-            if (is_legal_move(board, pos, create_coords(row, col))) {
-                return true;
-            }
-        } 
-    }
-    return false;
-} */
 
 bool piece_has_legal_move(Board *board, Coords pos) {
     Piece piece = get_piece(*board, pos);
@@ -61,7 +47,7 @@ bool is_legal_move(Board *board, Coords src_pos, Coords dest_pos) {
 }
 
 /*
-The parameter stop_at_first is useful in case that we just want to ensure that 
+The parameter stop_at_first is useful in case that we just want to ensure that at least one legal move exists for a piece.
 */
 MoveList generate_legal_moves_for_piece(Board *board, Color color, Coords pos, bool stop_at_first) {
     Piece piece = get_piece(*board, pos);

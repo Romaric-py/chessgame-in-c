@@ -4,14 +4,16 @@
 
 #include "king_check.h"
 #include "move_check.h"
+#include "legal_move.h"
+
 
 bool is_square_attacked_by(const Board *board, Coords pos, Color attacker_color) {
     unsigned int row, col;
 
     for (row = 0; row < BOARD_SIZE; row++) {
         for (col = 0; col < BOARD_SIZE; col++) {
-            Coords source = create_coords(row, col);
-            Piece attacker = get_piece(*board, source);
+            Coords src_pos = create_coords(row, col);
+            Piece attacker = get_piece(*board, src_pos);
 
             if (attacker.name == NONE || attacker.color != attacker_color) {
                 continue;
@@ -19,23 +21,25 @@ bool is_square_attacked_by(const Board *board, Coords pos, Color attacker_color)
 
             if (attacker.name == PAWN) {
                 int delta_row = (attacker.color == WHITE) ? -1 : 1;
-                int row_diff = (int)pos.row - (int)source.row;
-                int col_diff = (int)pos.col - (int)source.col;
+                int row_diff = (int)pos.row - (int)src_pos.row;
+                int col_diff = (int)pos.col - (int)src_pos.col;
 
                 if (row_diff == delta_row && abs(col_diff) == 1) {
                     return true;
                 }
+
+
             } else if(
                 (attacker.name == KNIGHT &&
-                is_knight_valid_move(board, source, pos)) ||
+                is_knight_valid_move(board, src_pos, pos)) ||
                 (attacker.name == BISHOP &&
-                is_bishop_valid_move(board, source, pos)) ||
+                is_bishop_valid_move(board, src_pos, pos)) ||
                 (attacker.name == ROOK &&
-                is_rook_valid_move(board, source, pos)) ||
+                is_rook_valid_move(board, src_pos, pos)) ||
                 (attacker.name == QUEEN &&
-                is_queen_valid_move(board, source, pos)) ||
+                is_queen_valid_move(board, src_pos, pos)) ||
                 (attacker.name == KING &&
-                is_king_valid_move(board, source, pos))
+                is_king_valid_move(board, src_pos, pos))
             ) {
                 return true;
             }
@@ -54,28 +58,8 @@ bool is_square_attacked(const Board *board, Coords pos) {
            is_square_attacked_by(board, pos, WHITE);
 }
 
-void find_king(const Board *board, Color color, Coords *coords, bool *found) {
-    Coords curr_coords;
-    Piece piece;
-    unsigned int row, col;
-    for (row = 0; row < BOARD_SIZE; row++) {
-        for (col = 0; col < BOARD_SIZE; col++) {
-            curr_coords = create_coords(row, col);
-            piece = get_piece(*board, curr_coords);
-            if (piece.color == color && piece.name == KING) {
-                *coords = curr_coords;
-                *found = true;
-                return;
-            }
-        }
-    }
-    *coords = create_coords(0, 0);
-    *found = false;
-}
 
+// WARNING: This function assumes that the color's king position field is initialized correctly in the board structure. If the king's position is not set, this can lead to undefined behavior. 
 bool is_king_in_check(const Board *board, Color color) {
-    Coords king_pos;
-    bool king_found;
-    find_king(board, color, &king_pos, &king_found);
-    return king_found && is_square_attacked(board, king_pos);
+    return is_square_attacked(board, (color == BLACK) ? board->king_pos.black : board->king_pos.white);
 }
