@@ -1,9 +1,7 @@
 #include <stdio.h>
-#include <string.h>
 
 #include "chessboard.h"
 #include "render_tui.h"
-#include "ANSI-color-codes.h"
 #include "legal_move.h"
 
 
