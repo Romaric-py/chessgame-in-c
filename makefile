@@ -16,9 +16,9 @@ run: bin/chessgame
 	./bin/chessgame
 
 # Compilation et exécution des tests unitaires
-test: tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c $(SRC)
+test: tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c tests/test_chessboard_move.c $(SRC)
 	@mkdir -p bin
-	$(CC) $(CFLAGS) tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c $(SRC) $(LDFLAGS_CUNIT) -o bin/test
+	$(CC) $(CFLAGS) tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c tests/test_chessboard_move.c $(SRC) $(LDFLAGS_CUNIT) -o bin/test
 	./bin/test
 
 benchmark: src/benchmark.c $(SRC)
@@ -30,4 +30,4 @@ benchmark: src/benchmark.c $(SRC)
 clean:
 	rm -rf bin/*
 
-.PHONY: all test clean
+.PHONY: all test clean benchmark run

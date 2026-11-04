@@ -9,7 +9,7 @@
 int main(void) {
     Color winner;
     bool draw;
-    play_chess(&winner, &draw, get_ai_move, get_human_move);
+    play_chess(&winner, &draw, get_ai_move, get_ai_move);
     if (!draw) {
         printf("The winner is %s\n", (winner == BLACK) ? "BLACK" : "WHITE");
     } else {

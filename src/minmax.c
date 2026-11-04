@@ -1,12 +1,11 @@
-#include <stdlib.h>
 #include "minmax.h"
 #include "legal_move.h"
 #include "game_status.h"
 #include "special_move.h"
 #include "utils.h"
 
-static void apply_search_move(Board *board, Move move_to_apply) {
-    move(board, move_to_apply.src, move_to_apply.dest);
+static MoveReport apply_search_move(Board *board, Move move_to_apply) {
+    MoveReport report = move(board, move_to_apply.src, move_to_apply.dest);
 
     if (can_promote_pawn(board, move_to_apply.dest, move_to_apply.dest)) {
         Piece pawn = get_piece(*board, move_to_apply.dest);
@@ -14,9 +13,17 @@ static void apply_search_move(Board *board, Move move_to_apply) {
             ? QUEEN : move_to_apply.promotion;
         set_piece(board, move_to_apply.dest, create_piece(promotion, pawn.color));
     }
+    return report;
 }
 
-// Legacy
+/*
+    It's preferred to use a clone of the board to avoid modifying the original board state during the search. 
+    However, we won't make clone of the passed board, as it would be a waste of memory and time. 
+    The user should manage the cloning of the board before calling this function, to ensure that his original board is not modified. 
+    (since we can't garantee yet that our funcions are free of side effects)
+*/
+
+// Legacy version of minmax, without alpha-beta pruning
 int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth) {
     int score;
     Coords from_pos, to_pos, best_src_pos, best_dest_pos;
@@ -53,17 +60,19 @@ int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coo
 
 
 int evaluate_move(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth) {
-    
-    Board board_copy = clone_board(board);
-    apply_search_move(&board_copy, create_move(src_pos, dest_pos));
+    MoveReport report = apply_search_move(board, create_move(src_pos, dest_pos));
 
     //* Note: decrementing depth
-    if (depth <= 0 || is_end_game(&board_copy)) {
-        return evaluate_board(&board_copy, color_max);
+    if (depth <= 0 || is_end_game(board)) {
+        undo_move(board, report);
+        return evaluate_board(board, color_max);
     }
 
     Color opponent_color = get_opponent_color(curr_color);
-    return minmax(&board_copy, color_max, opponent_color, &src_pos, &dest_pos, depth-1);
+    int score = minmax(board, color_max, opponent_color, &src_pos, &dest_pos, depth-1);
+    // undo move
+    undo_move(board, report);
+    return score;
 }
 
 int _present_pieces_score(Board *board, Color color) {
@@ -215,16 +224,18 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color,
 
 
 int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Move move_to_apply, unsigned int depth, int alpha, int beta) {
-    
-    Board board_copy = clone_board(board);
-    apply_search_move(&board_copy, move_to_apply);
+    MoveReport report = apply_search_move(board, move_to_apply);
 
     //* Note: decrementing depth
-    if (depth <= 0 || is_end_game(&board_copy)) {
-        return evaluate_board(&board_copy, color_max);
+    if (depth <= 0 || is_end_game(board)) {
+        undo_move(board, report);
+        return evaluate_board(board, color_max);
     }
 
     Color opponent_color = get_opponent_color(curr_color);
-    return minmax_ab(&board_copy, color_max, opponent_color,
+    int score = minmax_ab(board, color_max, opponent_color,
                      &move_to_apply, depth-1, alpha, beta);
+    // undo move
+    undo_move(board, report);
+    return score;
 }

@@ -99,16 +99,19 @@ void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMo
     write_move(moves_file, move_to_play.src, move_to_play.dest);
     move(board, move_to_play.src, move_to_play.dest);
     make_pawn_promotion(board, move_to_play.dest, move_to_play.promotion, is_ai_turn);
+
+    clear_screen();
+    display_board(board);
 }
 
 
 void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMove white_get_move) {
     Board board;
-    FILE *moves_file = fopen("src/moves.txt", "w");
+    FILE *moves_file = fopen(MOVE_RECORD_FILE, "w");
     PositionHistory history = create_position_history();
 
     if (moves_file == NULL) {
-        perror("src/moves.txt");
+        perror(MOVE_RECORD_FILE);
         *draw = true;
         return;
     }
@@ -130,8 +133,6 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMo
 
     while (!end_game) {
         chess_turn(&board, curr_color, black_get_move, white_get_move, moves_file);
-        clear_screen();
-        display_board(&board);
 
         opponent_color = get_opponent_color(curr_color);
         game_status = get_game_status(&board, opponent_color);

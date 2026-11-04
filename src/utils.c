@@ -2,6 +2,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "utils.h"
 
@@ -73,4 +74,13 @@ void read_coords(char *prompt, Coords *pos) {
     
     *pos = string_to_coords(pos_str);
     clear_stdin_buffer();
+}
+
+uint64_t rand64() {
+    uint64_t r1 = (uint64_t)rand();
+    uint64_t r2 = (uint64_t)rand();
+    uint64_t r3 = (uint64_t)rand();
+    uint64_t r4 = (uint64_t)rand();
+
+    return r1 | (r2 << 16) | (r3 << 32) | (r4 << 48);
 }

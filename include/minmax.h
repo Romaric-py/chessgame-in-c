@@ -4,7 +4,7 @@
 #include "chessboard.h"
 #include "movelist.h"
 
-#define INFINITY 60000
+#define INFINITY INT16_MAX
 
 int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth);
 

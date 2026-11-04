@@ -134,46 +134,84 @@ bool is_empty_square(Board board, Coords pos) {
     return is_none_piece(get_piece(board, pos));
 }
 
-void move(Board *board, Coords src_pos, Coords dest_pos) {
-    bool valid = false;
+void compute_rook_move_for_roque(Coords king_src_pos, Coords king_dest_pos, Coords *rook_src_pos, Coords *rook_dest_pos) {
+    unsigned int rook_col;
+    rook_col = (king_dest_pos.col < king_src_pos.col) ? 0 : BOARD_SIZE-1;
+    *rook_src_pos = create_coords(king_dest_pos.row, rook_col);
+    rook_col = (king_dest_pos.col < king_src_pos.col) ? 3 : 5;
+    *rook_dest_pos = create_coords(king_dest_pos.row, rook_col);
+}
 
-    if (is_enpassant_move(board, src_pos, dest_pos)) {
+// Assumes the move is legal before calling this function
+MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
+    MoveReport report = {
+        .src_pos = src_pos,
+        .dest_pos = dest_pos,
+        .moved_piece = get_piece(*board, src_pos),
+        .captured_piece = get_piece(*board, dest_pos),
+        .old_state = {
+            .enpassant = board->enpassant,
+            .roque = board->roque,
+            .king_pos = board->king_pos
+        },
+        .is_roque_move = is_roque_move(board, src_pos, dest_pos),
+        .is_enpassant_move = is_enpassant_move(board, src_pos, dest_pos)
+    };
+
+    /* if (!is_valid_move(board, src_pos, dest_pos)) {
+        return report;
+    } */
+
+    if (report.is_enpassant_move) {
+        report.captured_piece = get_piece(*board, board->enpassant.pos);
         set_piece(board, board->enpassant.pos, EMPTY_PIECE);
-        valid = true;
     }
 
     /* since the move down here, just make it for one piece, we 
         to manually move the rook for roque move */
-    if (is_roque_move(board, src_pos, dest_pos)) {
-        unsigned int rook_col;
+    if (report.is_roque_move) {
         Coords rook_src_pos, rook_dest_pos;
-
-        rook_col = (dest_pos.col < src_pos.col) ? 0 : BOARD_SIZE-1;
-        rook_src_pos = create_coords(dest_pos.row, rook_col);
-        rook_col = (dest_pos.col < src_pos.col) ? 3 : 5;
-        rook_dest_pos = create_coords(dest_pos.row, rook_col);
+        compute_rook_move_for_roque(src_pos, dest_pos, &rook_src_pos, &rook_dest_pos);
 
         set_piece(board, rook_dest_pos, get_piece(*board, rook_src_pos));
         set_piece(board, rook_src_pos, EMPTY_PIECE);
-        valid = true;
     }
 
     // "en passant" flag managing
     if (is_pawn_2steps_move(board, src_pos, dest_pos)) {
         board->enpassant.flag = true;
         board->enpassant.pos = dest_pos;
-        valid = true;
     } else {
         board->enpassant.flag = false;
     }
     
-    if (valid || is_valid_move(board, src_pos, dest_pos)) {
-        _update_roque_flags(board, src_pos);
-        _update_king_position(board, src_pos, dest_pos);
-        set_piece(board, dest_pos, get_piece(*board, src_pos));
-        set_piece(board, src_pos, EMPTY_PIECE);
+    _update_roque_flags(board, src_pos);
+    _update_king_position(board, src_pos, dest_pos);
+    set_piece(board, dest_pos, get_piece(*board, src_pos));
+    set_piece(board, src_pos, EMPTY_PIECE);
+    return report;
+}
+
+void undo_move(Board *board, MoveReport move_report) {
+    // Restore the board state to what it was before the move
+    board->enpassant = move_report.old_state.enpassant;
+    board->roque = move_report.old_state.roque;
+    board->king_pos = move_report.old_state.king_pos;
+
+    if (move_report.is_enpassant_move) {
+        set_piece(board, board->enpassant.pos, move_report.captured_piece);
     }
-   
+    if (move_report.is_roque_move) {
+        Coords rook_src_pos, rook_dest_pos;
+        compute_rook_move_for_roque(move_report.src_pos, move_report.dest_pos, &rook_src_pos, &rook_dest_pos);
+
+        set_piece(board, rook_src_pos, get_piece(*board, rook_dest_pos));
+        set_piece(board, rook_dest_pos, EMPTY_PIECE);
+    }
+
+    set_piece(board, move_report.src_pos, move_report.moved_piece);
+    set_piece(board, move_report.dest_pos, 
+        move_report.is_enpassant_move ? EMPTY_PIECE : move_report.captured_piece);
 }
 
 // Ensure the move is valid before calling this function

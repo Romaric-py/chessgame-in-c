@@ -4,7 +4,8 @@
 #include "chessboard.h"
 #include "movelist.h"
 
-#define DEPTH 5
+#define DEPTH 4
+#define MOVE_RECORD_FILE "src/moves.txt"
 
 typedef void (*FuncGetMove)(Board *, Color, Move *);
 

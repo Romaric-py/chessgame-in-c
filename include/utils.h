@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 
 #include "chessboard.h"
 
@@ -18,5 +19,7 @@ void clear_screen(void);
 void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos);
 bool is_valid_string_pos(char *input);
 void read_coords(char *prompt, Coords *pos);
+
+uint64_t rand64();
 
 #endif

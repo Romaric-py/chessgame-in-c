@@ -1,3 +1,4 @@
 - Stocker dans la structure board, le compte des types de pièces pour chaque couleur, et penser à la mettre à jour, à chaque fois que set_piece est appelé (ou move)
+- stocker aussi le joueur dont c'est le tour
 - Implémenter la table de transposition
 - Stocker l'état en échec ou pas de chaque roi dans la board
