@@ -185,7 +185,8 @@ MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
         board->enpassant.flag = false;
     }
     
-    _update_roque_flags(board, src_pos);
+    _update_roque_flags(board, dest_pos); // to invalidate the roque flag if a rook has been captured
+    _update_roque_flags(board, src_pos); // to invalidate the roque flag if a rook or a king has been moved
     _update_king_position(board, src_pos, dest_pos);
     set_piece(board, dest_pos, get_piece(*board, src_pos));
     set_piece(board, src_pos, EMPTY_PIECE);

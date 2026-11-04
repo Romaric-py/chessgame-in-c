@@ -1,6 +1,7 @@
 #include <CUnit/Basic.h>
 
 #include "chessboard.h"
+#include "special_move.h"
 
 static void assert_boards_equal(const Board *expected, const Board *actual) {
     unsigned int row, col;
@@ -162,6 +163,25 @@ void test_move_updates_rook_rights(void) {
     assert_boards_equal(&before, &board);
 }
 
+void test_capture_updates_captured_rook_rights(void) {
+    Board board = create_board();
+    Coords king = create_coords(0, 4);
+    Coords captured_rook = create_coords(0, 0);
+    Coords other_rook = create_coords(0, 7);
+    Coords capturing_rook = create_coords(1, 0);
+
+    set_piece(&board, king, create_piece(KING, BLACK));
+    set_piece(&board, captured_rook, create_piece(ROOK, BLACK));
+    set_piece(&board, other_rook, create_piece(ROOK, BLACK));
+    set_piece(&board, capturing_rook, create_piece(ROOK, WHITE));
+
+    move(&board, capturing_rook, captured_rook);
+    move(&board, other_rook, captured_rook);
+
+    CU_ASSERT_FALSE(board.roque.black.rook_a);
+    CU_ASSERT_FALSE(is_roque_move(&board, king, create_coords(0, 2)));
+}
+
 void register_chessboard_move_tests(void) {
     CU_pSuite suite = CU_add_suite("Chessboard_Move_Suite", NULL, NULL);
 
@@ -179,4 +199,6 @@ void register_chessboard_move_tests(void) {
                 test_move_and_undo_promotion_position);
     CU_add_test(suite, "test_move_updates_rook_rights",
                 test_move_updates_rook_rights);
+    CU_add_test(suite, "test_capture_updates_captured_rook_rights",
+                test_capture_updates_captured_rook_rights);
 }

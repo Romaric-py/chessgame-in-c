@@ -5,10 +5,7 @@
 #include "movelist.h"
 
 #define INFINITY INT16_MAX
-
-int minmax(Board *board, Color color_max, Color curr_color, Coords *src_pos, Coords *dest_pos, unsigned int depth);
-
-int evaluate_move(Board *board, Color color_max, Color curr_color, Coords src_pos, Coords dest_pos, unsigned int depth);
+#define DEPTH 5
 
 int evaluate_board(Board *board, Color color);
 

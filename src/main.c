@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "chessboard.h"
 #include "utils.h"
@@ -9,11 +10,12 @@
 int main(void) {
     Color winner;
     bool draw;
-    play_chess(&winner, &draw, get_ai_move, get_ai_move);
+
+    play_chess(&winner, &draw, get_human_move, get_human_move);
     if (!draw) {
         printf("The winner is %s\n", (winner == BLACK) ? "BLACK" : "WHITE");
     } else {
         printf("It's a draw");
     }
-    return 0;
+    return EXIT_SUCCESS;
 }

@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 #include <unistd.h>
 
 #include "play_chess.h"
@@ -11,6 +10,7 @@
 #include "minmax.h"
 #include "utils.h"
 #include "position_history.h"
+#include "special_move.h"
 
 
 void get_human_move(Board *board, Color color, Move *move) {
@@ -32,25 +32,31 @@ void get_human_move(Board *board, Color color, Move *move) {
     move->promotion = NONE;
 }
 
-void choose_piece_name(PieceName *name) {
+void choose_piece_name(char *prompt, PieceName *name) {
     char pn;
     do {
-        printf("Promote pawn to (N, R, Q, B): ");
+        printf("%s", prompt);
         pn = getchar();
         clear_stdin_buffer();
     } while (pn != 'N' && pn != 'R' &&
-            pn != 'Q' && pn != 'B');
+            pn != 'Q' && pn != 'B' &&
+            pn != 'n' && pn != 'r' &&
+            pn != 'q' && pn != 'b');
 
     switch (pn) {
+        case 'n':
         case 'N':
             *name = KNIGHT;
             break;
+        case 'b':
         case 'B':
             *name = BISHOP;
             break;
+        case 'q':
         case 'Q':
             *name = QUEEN;
             break;
+        case 'r':
         case 'R':
             *name = ROOK;
             break;
@@ -63,43 +69,34 @@ void choose_piece_name(PieceName *name) {
 
 void get_ai_move(Board *board, Color color, Move *move) {
     // minmax_ab_parallel(board, color, color, move, DEPTH);
-    minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
+    minmax_ab(board, color, color, move, 0, -INFINITY, INFINITY);
 }
 
-void make_pawn_promotion(Board *board, Coords pos, PieceName promotion, bool is_ai_turn) {
+void make_pawn_promotion(Board *board, Color color, Coords pos, PieceName promotion) {
     // Promotion
-    Piece piece = get_piece(*board, pos);
-    bool can_promote_pawn = (
-        piece.name == PAWN &&
-        ((piece.color == BLACK && pos.row == BOARD_SIZE - 1) ||  (piece.color == WHITE && pos.row == 0))
-    );
-
-    if (can_promote_pawn) {
-        PieceName new_name;
-        if (promotion != NONE) {
-            new_name = promotion;
-        } else if (is_ai_turn) {
-            new_name = QUEEN;
-        } else {
-            choose_piece_name(&new_name);
-        }
-        piece = create_piece(new_name, piece.color);
-        set_piece(board, pos, piece);
-    }
+    Piece piece = create_piece(promotion, color);
+    set_piece(board, pos, piece);
 }
 
 void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMove white_get_move, FILE *moves_file) {    
     printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
     Move move_to_play;
-    bool is_ai_turn = (color == BLACK);
+    bool can_promote;
 
     FuncGetMove get_move = (color == BLACK) ? black_get_move : white_get_move;
     get_move(board, color, &move_to_play);
 
     write_move(moves_file, move_to_play.src, move_to_play.dest);
+    can_promote = can_promote_pawn(board, move_to_play.src, move_to_play.dest);
     move(board, move_to_play.src, move_to_play.dest);
-    make_pawn_promotion(board, move_to_play.dest, move_to_play.promotion, is_ai_turn);
 
+    if (can_promote) {
+        if (move_to_play.promotion == NONE) { // probably a human move
+            choose_piece_name("Promote pawn to (N, R, Q, B): ", &move_to_play.promotion);
+        }
+        make_pawn_promotion(board, color,  move_to_play.dest, move_to_play.promotion);
+    }
+    
     clear_screen();
     display_board(board);
 }
