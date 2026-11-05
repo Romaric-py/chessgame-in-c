@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include "movelist.h"
 
 Move create_move(Coords src, Coords dest) {
@@ -9,16 +10,16 @@ Move create_move(Coords src, Coords dest) {
     };
 }
 
-MoveList create_movelist() {
-    MoveList movelist;
-    movelist.count = 0;
-    return movelist;
+void create_movelist(MoveList *list) {
+    list->count = 0;
 }
 
 void add_move(MoveList *list, Move move) {
     if (list->count < MAX_MOVES) {
         list->moves[list->count] = move;
         list->count++;
+    } else {
+        fprintf(stderr, "Error: MoveList is full. Cannot add more moves.\n");
     }
 }
 

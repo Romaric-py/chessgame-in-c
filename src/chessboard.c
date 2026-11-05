@@ -115,8 +115,8 @@ void init_board(Board *board) {
 
 }
 
-Piece get_piece(Board board, Coords pos) {
-    return board.squares[pos.row][pos.col];
+Piece get_piece(const Board *board, Coords pos) {
+    return board->squares[pos.row][pos.col];
 }
 
 void set_piece(Board *board, Coords pos, Piece piece) {
@@ -130,7 +130,11 @@ void set_piece(Board *board, Coords pos, Piece piece) {
     }
 }
 
-bool is_empty_square(Board board, Coords pos) {
+void switch_turn(Board *board) {
+    board->current_turn = get_opponent_color(board->current_turn);
+}
+
+bool is_empty_square(const Board *board, Coords pos) {
     return is_none_piece(get_piece(board, pos));
 }
 
@@ -145,10 +149,11 @@ void compute_rook_move_for_roque(Coords king_src_pos, Coords king_dest_pos, Coor
 // Assumes the move is legal before calling this function
 MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
     MoveReport report = {
+        .moved_color = get_piece(board, src_pos).color,
         .src_pos = src_pos,
         .dest_pos = dest_pos,
-        .moved_piece = get_piece(*board, src_pos),
-        .captured_piece = get_piece(*board, dest_pos),
+        .moved_piece = get_piece(board, src_pos),
+        .captured_piece = get_piece(board, dest_pos),
         .old_state = {
             .enpassant = board->enpassant,
             .roque = board->roque,
@@ -163,7 +168,7 @@ MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
     } */
 
     if (report.is_enpassant_move) {
-        report.captured_piece = get_piece(*board, board->enpassant.pos);
+        report.captured_piece = get_piece(board, board->enpassant.pos);
         set_piece(board, board->enpassant.pos, EMPTY_PIECE);
     }
 
@@ -173,7 +178,7 @@ MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
         Coords rook_src_pos, rook_dest_pos;
         compute_rook_move_for_roque(src_pos, dest_pos, &rook_src_pos, &rook_dest_pos);
 
-        set_piece(board, rook_dest_pos, get_piece(*board, rook_src_pos));
+        set_piece(board, rook_dest_pos, get_piece(board, rook_src_pos));
         set_piece(board, rook_src_pos, EMPTY_PIECE);
     }
 
@@ -188,8 +193,9 @@ MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
     _update_roque_flags(board, dest_pos); // to invalidate the roque flag if a rook has been captured
     _update_roque_flags(board, src_pos); // to invalidate the roque flag if a rook or a king has been moved
     _update_king_position(board, src_pos, dest_pos);
-    set_piece(board, dest_pos, get_piece(*board, src_pos));
+    set_piece(board, dest_pos, get_piece(board, src_pos));
     set_piece(board, src_pos, EMPTY_PIECE);
+    switch_turn(board);
     return report;
 }
 
@@ -206,7 +212,7 @@ void undo_move(Board *board, MoveReport move_report) {
         Coords rook_src_pos, rook_dest_pos;
         compute_rook_move_for_roque(move_report.src_pos, move_report.dest_pos, &rook_src_pos, &rook_dest_pos);
 
-        set_piece(board, rook_src_pos, get_piece(*board, rook_dest_pos));
+        set_piece(board, rook_src_pos, get_piece(board, rook_dest_pos));
         set_piece(board, rook_dest_pos, EMPTY_PIECE);
     }
 
@@ -217,7 +223,7 @@ void undo_move(Board *board, MoveReport move_report) {
 
 // Ensure the move is valid before calling this function
 static void _update_roque_flags(Board *board, Coords src_pos) {
-    Piece piece = get_piece(*board, src_pos);
+    Piece piece = get_piece(board, src_pos);
 
     if (piece.name != KING && piece.name != ROOK) return;
     // Starting here, we ensure that it's a rook or a king
@@ -237,7 +243,7 @@ static void _update_roque_flags(Board *board, Coords src_pos) {
 
 // Ensure the move is valid before calling this function
 static void _update_king_position(Board *board, Coords src_pos, Coords dest_pos) {
-    Piece piece = get_piece(*board, src_pos);
+    Piece piece = get_piece(board, src_pos);
 
     if (piece.name != KING) return;
 

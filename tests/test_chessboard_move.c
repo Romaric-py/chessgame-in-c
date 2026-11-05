@@ -44,8 +44,8 @@ void test_move_and_undo_quiet_move(void) {
 
     CU_ASSERT_EQUAL(report.moved_piece.name, ROOK);
     CU_ASSERT_TRUE(is_none_piece(report.captured_piece));
-    CU_ASSERT_EQUAL(get_piece(board, destination).name, ROOK);
-    CU_ASSERT_TRUE(is_empty_square(board, source));
+    CU_ASSERT_EQUAL(get_piece(&board, destination).name, ROOK);
+    CU_ASSERT_TRUE(is_empty_square(&board, source));
 
     undo_move(&board, report);
     assert_boards_equal(&before, &board);
@@ -105,8 +105,8 @@ void test_move_and_undo_en_passant(void) {
 
     CU_ASSERT_TRUE(report.is_enpassant_move);
     CU_ASSERT_EQUAL(report.captured_piece.name, PAWN);
-    CU_ASSERT_TRUE(is_empty_square(board, attacked));
-    CU_ASSERT_EQUAL(get_piece(board, destination).name, PAWN);
+    CU_ASSERT_TRUE(is_empty_square(&board, attacked));
+    CU_ASSERT_EQUAL(get_piece(&board, destination).name, PAWN);
 
     undo_move(&board, report);
     assert_boards_equal(&before, &board);
@@ -125,8 +125,8 @@ void test_move_and_undo_kingside_castle(void) {
     report = move(&board, king, create_coords(7, 6));
 
     CU_ASSERT_TRUE(report.is_roque_move);
-    CU_ASSERT_EQUAL(get_piece(board, create_coords(7, 6)).name, KING);
-    CU_ASSERT_EQUAL(get_piece(board, create_coords(7, 5)).name, ROOK);
+    CU_ASSERT_EQUAL(get_piece(&board, create_coords(7, 6)).name, KING);
+    CU_ASSERT_EQUAL(get_piece(&board, create_coords(7, 5)).name, ROOK);
     CU_ASSERT_FALSE(board.roque.white.king);
 
     undo_move(&board, report);
@@ -143,7 +143,7 @@ void test_move_and_undo_promotion_position(void) {
     Board before = clone_board(&board);
 
     report = move(&board, source, destination);
-    CU_ASSERT_EQUAL(get_piece(board, destination).name, PAWN);
+    CU_ASSERT_EQUAL(get_piece(&board, destination).name, PAWN);
 
     set_piece(&board, destination, create_piece(QUEEN, WHITE));
     undo_move(&board, report);

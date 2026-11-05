@@ -4,6 +4,7 @@
 #include "chessboard.h"
 #include "utils.h"
 #include "play_chess.h"
+#include "transposition_table.h"
 
 
 
@@ -11,7 +12,10 @@ int main(void) {
     Color winner;
     bool draw;
 
-    play_chess(&winner, &draw, get_human_move, get_human_move);
+    init_zobrist_hashes();
+    clear_transposition_table();
+
+    play_chess(&winner, &draw, get_ai_move, get_ai_move);
     if (!draw) {
         printf("The winner is %s\n", (winner == BLACK) ? "BLACK" : "WHITE");
     } else {

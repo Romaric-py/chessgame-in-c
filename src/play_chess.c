@@ -17,7 +17,7 @@ void get_human_move(Board *board, Color color, Move *move) {
     do {
         do {
             read_coords("From", &move->src);
-        } while (get_piece(*board, move->src).color != color);
+        } while (get_piece(board, move->src).color != color);
 
         clear_screen();
         display_board_with_hint(board, move->src);
@@ -69,7 +69,7 @@ void choose_piece_name(char *prompt, PieceName *name) {
 
 void get_ai_move(Board *board, Color color, Move *move) {
     // minmax_ab_parallel(board, color, color, move, DEPTH);
-    minmax_ab(board, color, color, move, 0, -INFINITY, INFINITY);
+    minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
 }
 
 void make_pawn_promotion(Board *board, Color color, Coords pos, PieceName promotion) {

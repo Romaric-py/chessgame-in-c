@@ -13,7 +13,7 @@ bool is_square_attacked_by(const Board *board, Coords pos, Color attacker_color)
     for (row = 0; row < BOARD_SIZE; row++) {
         for (col = 0; col < BOARD_SIZE; col++) {
             Coords src_pos = create_coords(row, col);
-            Piece attacker = get_piece(*board, src_pos);
+            Piece attacker = get_piece(board, src_pos);
 
             if (attacker.name == NONE || attacker.color != attacker_color) {
                 continue;
@@ -49,9 +49,9 @@ bool is_square_attacked_by(const Board *board, Coords pos, Color attacker_color)
 }
 
 bool is_square_attacked(const Board *board, Coords pos) {
-    if (!is_empty_square(*board, pos)) {
+    if (!is_empty_square(board, pos)) {
         return is_square_attacked_by(
-            board, pos, get_opponent_color(get_piece(*board, pos).color));
+            board, pos, get_opponent_color(get_piece(board, pos).color));
     }
 
     return is_square_attacked_by(board, pos, BLACK) ||

@@ -17,32 +17,32 @@ void test_empty_square_attacked_by_each_piece(void) {
     Board board = create_board();
 
     set_piece(&board, create_coords(3, 3), create_piece(PAWN, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
     board = create_board();
     set_piece(&board, create_coords(2, 3), create_piece(KNIGHT, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
     board = create_board();
     set_piece(&board, create_coords(1, 1), create_piece(BISHOP, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
     board = create_board();
     set_piece(&board, create_coords(4, 0), create_piece(ROOK, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
     board = create_board();
     set_piece(&board, create_coords(0, 0), create_piece(QUEEN, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
     board = create_board();
     set_piece(&board, create_coords(3, 3), create_piece(KING, BLACK));
-    CU_ASSERT_TRUE(is_empty_square(board, target));
+    CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 }
 

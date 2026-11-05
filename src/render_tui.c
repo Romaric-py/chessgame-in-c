@@ -44,7 +44,7 @@ void display_board(Board *board) {
             } else {
                 printf("\e[0;100m"); // white on black
             }
-            printf(" %s " reset, repr_piece(get_piece(*board, pos)));
+            printf(" %s " reset, repr_piece(get_piece(board, pos)));
         }
         printf(" \n");
     }
@@ -68,7 +68,7 @@ void display_board_with_hint(Board *board, Coords src_pos) {
             } else {
                 printf("\e[0;100m"); // white on black
             }
-            printf(" %s " reset, repr_piece(get_piece(*board, pos)));
+            printf(" %s " reset, repr_piece(get_piece(board, pos)));
         }
         printf(" \n");
     }
@@ -78,4 +78,3 @@ void display_board_with_hint(Board *board, Coords src_pos) {
     }
     printf("\n\n");
 }
-

@@ -15,18 +15,18 @@ bool is_enpassant_move(const Board *board, Coords src_pos, Coords dest_pos) {
         !board->enpassant.flag || 
         dest_pos.col != board->enpassant.pos.col ||
         src_pos.row != board->enpassant.pos.row || 
-        is_empty_square(*board, src_pos) || 
-        !is_empty_square(*board, dest_pos)
+        is_empty_square(board, src_pos) ||
+        !is_empty_square(board, dest_pos)
     ) {
         return false; // impossible to do "en passant" move in that configuration
     }
 
     // abs(src_pos.col - dest_col.col) = 1
     // if white: row_diff = 1 ; black: row_diff = -1
-    Piece attacker = get_piece(*board, src_pos);
+    Piece attacker = get_piece(board, src_pos);
     int delta_row = (attacker.color == BLACK) ? 1 : -1;
 
-    Piece attacked = get_piece(*board, board->enpassant.pos);
+    Piece attacked = get_piece(board, board->enpassant.pos);
 
     return attacker.color != attacked.color
         && abs((int)dest_pos.col - (int)src_pos.col) == 1
@@ -35,7 +35,7 @@ bool is_enpassant_move(const Board *board, Coords src_pos, Coords dest_pos) {
 
 // assumes the move is valid
 bool can_promote_pawn(const Board *board, Coords src_pos, Coords dest_pos) {
-    Piece pawn = get_piece(*board, src_pos);
+    Piece pawn = get_piece(board, src_pos);
 
     return pawn.name == PAWN &&
         ((pawn.color == WHITE && dest_pos.row == 0) ||
@@ -43,7 +43,7 @@ bool can_promote_pawn(const Board *board, Coords src_pos, Coords dest_pos) {
 }
 
 bool is_roque_move(const Board *board, Coords src_pos, Coords dest_pos) {
-    Piece src_piece = get_piece(*board, src_pos);
+    Piece src_piece = get_piece(board, src_pos);
 
     // src square should contain a king
     if (src_piece.name != KING) return false;
@@ -65,7 +65,7 @@ bool is_roque_move(const Board *board, Coords src_pos, Coords dest_pos) {
     // src != dest
     bool result = !are_coords_equal(src_pos, dest_pos) &&
     // a rook should be present 
-    get_piece(*board, rook_coords).name == ROOK &&
+    get_piece(board, rook_coords).name == ROOK &&
     // both src and dest should be on the king home row
     src_pos.row == dest_pos.row && 
     src_pos.row == king_home_row &&
