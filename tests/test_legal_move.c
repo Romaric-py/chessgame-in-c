@@ -8,7 +8,7 @@
 #include "legal_move.h"
 
 static Board board_with_kings(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     set_piece(&board, create_coords(7, 4), create_piece(KING, WHITE));
     set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
     return board;
@@ -25,7 +25,7 @@ void test_has_legal_move_for_both_colors(void) {
 }
 
 void test_no_legal_move_on_board_without_pieces(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
     CU_ASSERT_FALSE(has_legal_move(&board, BLACK));

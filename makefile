@@ -6,7 +6,7 @@ SRC = src/chessboard.c src/movelist.c src/move_check.c src/render_tui.c src/util
 
 all: bin/chessgame
 
-# Compilation du jeu principal
+# Compilation of the game main file
 bin/chessgame: src/main.c $(SRC)
 	@mkdir -p bin
 	$(CC) $(CFLAGS) src/main.c $(SRC) -o $@
@@ -15,7 +15,7 @@ bin/chessgame: src/main.c $(SRC)
 run: bin/chessgame
 	./bin/chessgame
 
-# Compilation et exécution des tests unitaires
+# Compile and run tests
 test: tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c tests/test_chessboard_move.c $(SRC)
 	@mkdir -p bin
 	$(CC) $(CFLAGS) tests/test_main.c tests/test_move_check.c tests/test_king_check.c tests/test_legal_move.c tests/test_game_status.c tests/test_special_move.c tests/test_chessboard_move.c $(SRC) $(LDFLAGS_CUNIT) -o bin/test
@@ -28,7 +28,10 @@ benchmark/compile: src/benchmark.c $(SRC)
 benchmark/run:
 	./bin/benchmark
 
-# Nettoyage des binaires
+format:
+	find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
+
+# Binaries cleaning
 clean:
 	rm -rf bin/*
 

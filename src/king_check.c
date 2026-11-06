@@ -61,5 +61,5 @@ bool is_square_attacked(const Board *board, Coords pos) {
 
 // WARNING: This function assumes that the color's king position field is initialized correctly in the board structure. If the king's position is not set, this can lead to undefined behavior. 
 bool is_king_in_check(const Board *board, Color color) {
-    return is_square_attacked(board, (color == BLACK) ? board->king_pos.black : board->king_pos.white);
+    return is_square_attacked(board, KING_POS(*board, color));
 }

@@ -12,9 +12,8 @@ static bool is_safe_range(const Board *board, Coords src_pos, Coords dest_pos,
 
 bool is_enpassant_move(const Board *board, Coords src_pos, Coords dest_pos) {
     if (
-        !board->enpassant.flag || 
-        dest_pos.col != board->enpassant.pos.col ||
-        src_pos.row != board->enpassant.pos.row || 
+        !ENPASSANT_ACTIVE(*board) || 
+        !are_coords_equal(dest_pos, ENPASSANT_POS(*board)) ||
         is_empty_square(board, src_pos) ||
         !is_empty_square(board, dest_pos)
     ) {
@@ -26,7 +25,7 @@ bool is_enpassant_move(const Board *board, Coords src_pos, Coords dest_pos) {
     Piece attacker = get_piece(board, src_pos);
     int delta_row = (attacker.color == BLACK) ? 1 : -1;
 
-    Piece attacked = get_piece(board, board->enpassant.pos);
+    Piece attacked = get_piece(board, create_coords(src_pos.row, dest_pos.col));
 
     return attacker.color != attacked.color
         && abs((int)dest_pos.col - (int)src_pos.col) == 1
@@ -42,7 +41,7 @@ bool can_promote_pawn(const Board *board, Coords src_pos, Coords dest_pos) {
          (pawn.color == BLACK && dest_pos.row == BOARD_SIZE - 1));
 }
 
-bool is_roque_move(const Board *board, Coords src_pos, Coords dest_pos) {
+bool is_castling_move(const Board *board, Coords src_pos, Coords dest_pos) {
     Piece src_piece = get_piece(board, src_pos);
 
     // src square should contain a king
@@ -50,42 +49,30 @@ bool is_roque_move(const Board *board, Coords src_pos, Coords dest_pos) {
 
     Color color = src_piece.color;
 
-    unsigned int king_home_row = (color == BLACK) ? 0 : BOARD_SIZE - 1;
-    struct _oneColorRoqueState roque_state = (color == BLACK) ? board->roque.black : board->roque.white;
-
     int move_direction = sign(dest_pos.col - src_pos.col);
     unsigned int rook_col = (move_direction == -1) ? 0 : BOARD_SIZE - 1;
-    //unsigned int rook_dest_col = (dest_pos.col < src_pos.col) ? 3 : 5;
-    bool rook_not_moved = (rook_col == 0) ? roque_state.rook_a : roque_state.rook_h; 
     Coords rook_coords = create_coords(src_pos.row, rook_col);
+    bool castling_right = (move_direction == -1) ? CASTLE_Q(*board, color) : CASTLE_K(*board, color);
     
-    // DEBUG:
-    
-    //return 
-    // src != dest
-    bool result = !are_coords_equal(src_pos, dest_pos) &&
-    // a rook should be present 
-    get_piece(board, rook_coords).name == ROOK &&
-    // both src and dest should be on the king home row
-    src_pos.row == dest_pos.row && 
-    src_pos.row == king_home_row &&
-    // dest_pos.col should be either 2 or 6
-    (dest_pos.col == 2 || dest_pos.col == 6) &&
-    // the king should not have moved
-    roque_state.king &&
-    // the king should not be in check
-    !is_square_attacked_by(board, src_pos, get_opponent_color(color)) &&
-    // the targeted rook should not have moved
-    rook_not_moved &&
-    // all squares between the targeted rook and the king should be empty (bounds not included)
-    is_free_range(board, src_pos, rook_coords, 0, move_direction) &&
-    // all squares between src(not included) and dest (on the same row) should not be attacked
-    is_valid_coords(dest_pos.row, dest_pos.col + move_direction) &&
-    is_safe_range(board, src_pos,
+    return !are_coords_equal(src_pos, dest_pos) &&
+
+        // dest_pos.col should be either 2 or 6
+        (dest_pos.col == 2 || dest_pos.col == 6) &&
+
+        // this castling move should be allowed by the castling state
+        castling_right &&
+
+        // the king should not be in check
+        !is_square_attacked_by(board, src_pos, get_opponent_color(color)) &&
+
+        // all squares between the targeted rook and the king should be empty (bounds not included)
+        is_free_range(board, src_pos, rook_coords, 0, move_direction) &&
+        
+        // all squares between src(not included) and dest (on the same row) should not be attacked
+        is_valid_coords(dest_pos.row, dest_pos.col + move_direction) &&
+        is_safe_range(board, src_pos,
                   create_coords(dest_pos.row, dest_pos.col + move_direction),
                   0, move_direction, color);
-    //printf("is_roque_move: src=%s, dest=%s, result=%d\n", coords_to_string(src_pos), coords_to_string(dest_pos), result);
-    return result;
 }
 
 static bool is_safe_range(const Board *board, Coords src_pos, Coords dest_pos,

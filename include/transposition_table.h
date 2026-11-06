@@ -33,7 +33,7 @@ uint64_t get_position_piece_hash(Coords pos, Piece piece);
 uint64_t hash_board_state(Board *board);
 
 //! When move_report will include the color who played the move, we can use it to update the hash without needing the board state
-void increment_hash_board_state(uint64_t *hash, Board *board, MoveReport move_report);
+void increment_hash_board_state(uint64_t *hash, Board *board, const MoveReport *move_report);
 
 void add_to_transposition_table(uint64_t hash, int score, unsigned int depth, Move best_move, int alpha, int beta);
 bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move, int alpha, int beta, unsigned int depth);

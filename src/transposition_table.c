@@ -60,12 +60,12 @@ uint64_t get_roque_hash(Color color, bool side) {
     return roque_hashes[color][side];
 }
 
-static void _update_roque_hash(uint64_t *hash, struct _oneColorRoqueState *roque_state, Color color) {
-    if (roque_state->king && roque_state->rook_a) {
-        *hash ^= get_roque_hash(color, 0); // queen side
+static void _update_roque_hash(uint64_t *hash, const BoardMetaData *meta, Color color) {
+    if (meta->colors[color].castle_rights.queen_side) {
+        *hash ^= get_roque_hash(color, 0);
     }
-    if (roque_state->king && roque_state->rook_h) {
-        *hash ^= get_roque_hash(color, 1); // king side
+    if (meta->colors[color].castle_rights.king_side) {
+        *hash ^= get_roque_hash(color, 1);
     }
 }
 
@@ -84,44 +84,44 @@ uint64_t hash_board_state(Board *board) {
     }
 
     // Player turn
-    if (board->current_turn == WHITE) {
+    if (board->meta.current_turn == WHITE) {
         hash ^= white_turn_hash;
     }
 
     // Castling rights
-    _update_roque_hash(&hash, &board->roque.black, BLACK);
-    _update_roque_hash(&hash, &board->roque.white, WHITE);
+    _update_roque_hash(&hash, &board->meta, BLACK);
+    _update_roque_hash(&hash, &board->meta, WHITE);
 
     // En passant
-    if (board->enpassant.flag) {
-        hash ^= get_position_enpassant_hash(board->enpassant.pos);
+    if (ENPASSANT_ACTIVE(*board)) {
+        hash ^= get_position_enpassant_hash(ENPASSANT_POS(*board));
     }
     
     return hash;
 }
 
 //! When move_report will include the color who played the move, we can use it to update the hash without needing the board state
-void increment_hash_board_state(uint64_t *hash, Board *board, MoveReport move_report) {
+void increment_hash_board_state(uint64_t *hash, Board *board, const MoveReport *move_report) {
 
     // Remove the piece from src_pos
-    *hash ^= get_position_piece_hash(move_report.src_pos, move_report.moved_piece);
+    *hash ^= get_position_piece_hash(move_report->src_pos, move_report->moved_piece);
 
     // Add the piece to dest_pos
-    *hash ^= get_position_piece_hash(move_report.dest_pos, move_report.moved_piece);
+    *hash ^= get_position_piece_hash(move_report->dest_pos, move_report->moved_piece);
 
     // If a piece was captured, remove it from the hash
-    if (!is_none_piece(move_report.captured_piece)) {
-        *hash ^= get_position_piece_hash(move_report.dest_pos, move_report.captured_piece);
+    if (!is_none_piece(move_report->captured_piece)) {
+        *hash ^= get_position_piece_hash(move_report->dest_pos, move_report->captured_piece);
     }
 
     // Special cases: en passant and roque moves
-    if (move_report.is_enpassant_move) {
+    if (move_report->is_enpassant_move) {
         // Remove the captured pawn from the hash
-        *hash ^= get_position_piece_hash(move_report.old_state.enpassant.pos, move_report.captured_piece);
+        *hash ^= get_position_piece_hash(move_report->old_meta.enpassant.target_pos, move_report->captured_piece);
     } 
-    else if (move_report.is_roque_move) {
+    else if (move_report->is_castling_move) {
         Coords rook_src_pos, rook_dest_pos;
-        compute_rook_move_for_roque(move_report.src_pos, move_report.dest_pos, &rook_src_pos, &rook_dest_pos);
+        compute_rook_move_for_castling(move_report->src_pos, move_report->dest_pos, &rook_src_pos, &rook_dest_pos);
 
         // Remove / Add pieces for the rook's move; the king's move is already handled above
         *hash ^= get_position_piece_hash(rook_src_pos, get_piece(board, rook_src_pos));
@@ -132,24 +132,24 @@ void increment_hash_board_state(uint64_t *hash, Board *board, MoveReport move_re
     *hash ^= white_turn_hash;
 
     // Update the en passant hash
-    if (move_report.old_state.enpassant.flag) {
+    if (move_report->old_meta.enpassant.is_active) {
         // Remove the old en passant hash
-        *hash ^= get_position_enpassant_hash(move_report.old_state.enpassant.pos);
+        *hash ^= get_position_enpassant_hash(move_report->old_meta.enpassant.target_pos);
     }
-    if (board->enpassant.flag) {
+    if (ENPASSANT_ACTIVE(*board)) {
         // Add the new en passant hash
-        *hash ^= get_position_enpassant_hash(board->enpassant.pos);
+        *hash ^= get_position_enpassant_hash(ENPASSANT_POS(*board));
     }
 
     // Update the castling rights hash
     // Only the color of the player who made the move can have its castling rights changed
     _update_roque_hash(hash, 
-        (move_report.moved_color == BLACK) ? &move_report.old_state.roque.black : &move_report.old_state.roque.white,
-        move_report.moved_color
+        &move_report->old_meta,
+        move_report->moved_piece.color
     );
     _update_roque_hash(hash, 
-        (move_report.moved_color == BLACK) ? &board->roque.black : &board->roque.white,
-        move_report.moved_color
+        &board->meta,
+        move_report->moved_piece.color
     );
 }
 

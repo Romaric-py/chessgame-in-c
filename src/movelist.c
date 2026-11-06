@@ -29,22 +29,19 @@ void extend_movelist(MoveList *list, MoveList *other_list) {
     }
 }
 
+// Time: O(n), space: O(1).
 void order_captures_first(MoveList *list) {
-    Move ordered_moves[MAX_MOVES];
-    unsigned int ordered_count = 0;
+    int i = 0;
+    int j = list->count - 1;
 
-    for (unsigned int i = 0; i < list->count; i++) {
-        if (list->moves[i].is_capture) {
-            ordered_moves[ordered_count++] = list->moves[i];
-        }
-    }
-    for (unsigned int i = 0; i < list->count; i++) {
-        if (!list->moves[i].is_capture) {
-            ordered_moves[ordered_count++] = list->moves[i];
-        }
-    }
+    while (i < j) {
+        if (list->moves[i].is_capture) i++;
+        if (!list->moves[j].is_capture) j--;
 
-    for (unsigned int i = 0; i < list->count; i++) {
-        list->moves[i] = ordered_moves[i];
+        if (i < j) {
+            Move temp = list->moves[i];
+            list->moves[i] = list->moves[j];
+            list->moves[j] = temp;
+        }
     }
 }

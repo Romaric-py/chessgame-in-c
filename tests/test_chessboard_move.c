@@ -15,23 +15,21 @@ static void assert_boards_equal(const Board *expected, const Board *actual) {
         }
     }
 
-    CU_ASSERT_EQUAL(expected->enpassant.flag, actual->enpassant.flag);
-    CU_ASSERT_TRUE(are_coords_equal(expected->enpassant.pos,
-                                    actual->enpassant.pos));
-    CU_ASSERT_EQUAL(expected->roque.black.king, actual->roque.black.king);
-    CU_ASSERT_EQUAL(expected->roque.black.rook_a, actual->roque.black.rook_a);
-    CU_ASSERT_EQUAL(expected->roque.black.rook_h, actual->roque.black.rook_h);
-    CU_ASSERT_EQUAL(expected->roque.white.king, actual->roque.white.king);
-    CU_ASSERT_EQUAL(expected->roque.white.rook_a, actual->roque.white.rook_a);
-    CU_ASSERT_EQUAL(expected->roque.white.rook_h, actual->roque.white.rook_h);
-    CU_ASSERT_TRUE(are_coords_equal(expected->king_pos.black,
-                                    actual->king_pos.black));
-    CU_ASSERT_TRUE(are_coords_equal(expected->king_pos.white,
-                                    actual->king_pos.white));
+    CU_ASSERT_EQUAL(ENPASSANT_ACTIVE(*expected), ENPASSANT_ACTIVE(*actual));
+    CU_ASSERT_TRUE(are_coords_equal(ENPASSANT_POS(*expected),
+                                    ENPASSANT_POS(*actual)));
+    CU_ASSERT_EQUAL(CASTLE_Q(*expected, BLACK), CASTLE_Q(*actual, BLACK));
+    CU_ASSERT_EQUAL(CASTLE_K(*expected, BLACK), CASTLE_K(*actual, BLACK));
+    CU_ASSERT_EQUAL(CASTLE_Q(*expected, WHITE), CASTLE_Q(*actual, WHITE));
+    CU_ASSERT_EQUAL(CASTLE_K(*expected, WHITE), CASTLE_K(*actual, WHITE));
+    CU_ASSERT_TRUE(are_coords_equal(KING_POS(*expected, BLACK),
+                                    KING_POS(*actual, BLACK)));
+    CU_ASSERT_TRUE(are_coords_equal(KING_POS(*expected, WHITE),
+                                    KING_POS(*actual, WHITE)));
 }
 
 void test_move_and_undo_quiet_move(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords source = create_coords(4, 4);
     Coords destination = create_coords(4, 7);
     Piece rook = create_piece(ROOK, WHITE);
@@ -40,19 +38,19 @@ void test_move_and_undo_quiet_move(void) {
     set_piece(&board, source, rook);
     Board before = clone_board(&board);
 
-    report = move(&board, source, destination);
+    report = make_move(&board, source, destination);
 
     CU_ASSERT_EQUAL(report.moved_piece.name, ROOK);
     CU_ASSERT_TRUE(is_none_piece(report.captured_piece));
     CU_ASSERT_EQUAL(get_piece(&board, destination).name, ROOK);
     CU_ASSERT_TRUE(is_empty_square(&board, source));
 
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_and_undo_capture(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords source = create_coords(4, 4);
     Coords destination = create_coords(4, 7);
     MoveReport report;
@@ -61,35 +59,36 @@ void test_move_and_undo_capture(void) {
     set_piece(&board, destination, create_piece(KNIGHT, BLACK));
     Board before = clone_board(&board);
 
-    report = move(&board, source, destination);
+    report = make_move(&board, source, destination);
 
     CU_ASSERT_EQUAL(report.captured_piece.name, KNIGHT);
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_and_undo_pawn_double_step_restores_en_passant_state(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords source = create_coords(6, 3);
     Coords destination = create_coords(4, 3);
     MoveReport report;
 
-    board.enpassant.flag = true;
-    board.enpassant.pos = create_coords(3, 5);
+    ENPASSANT_ACTIVE(board) = true;
+    ENPASSANT_POS(board) = create_coords(3, 5);
     set_piece(&board, source, create_piece(PAWN, WHITE));
     Board before = clone_board(&board);
 
-    report = move(&board, source, destination);
+    report = make_move(&board, source, destination);
 
-    CU_ASSERT_TRUE(board.enpassant.flag);
-    CU_ASSERT_TRUE(are_coords_equal(board.enpassant.pos, destination));
+    CU_ASSERT_TRUE(ENPASSANT_ACTIVE(board));
+    CU_ASSERT_TRUE(are_coords_equal(
+        ENPASSANT_POS(board), create_coords(5, 3)));
 
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_and_undo_en_passant(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords source = create_coords(3, 3);
     Coords destination = create_coords(2, 4);
     Coords attacked = create_coords(3, 4);
@@ -97,23 +96,23 @@ void test_move_and_undo_en_passant(void) {
 
     set_piece(&board, source, create_piece(PAWN, WHITE));
     set_piece(&board, attacked, create_piece(PAWN, BLACK));
-    board.enpassant.flag = true;
-    board.enpassant.pos = attacked;
+    ENPASSANT_ACTIVE(board) = true;
+    ENPASSANT_POS(board) = destination;
     Board before = clone_board(&board);
 
-    report = move(&board, source, destination);
+    report = make_move(&board, source, destination);
 
     CU_ASSERT_TRUE(report.is_enpassant_move);
     CU_ASSERT_EQUAL(report.captured_piece.name, PAWN);
     CU_ASSERT_TRUE(is_empty_square(&board, attacked));
     CU_ASSERT_EQUAL(get_piece(&board, destination).name, PAWN);
 
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_and_undo_kingside_castle(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords king = create_coords(7, 4);
     Coords rook = create_coords(7, 7);
     MoveReport report;
@@ -122,19 +121,19 @@ void test_move_and_undo_kingside_castle(void) {
     set_piece(&board, rook, create_piece(ROOK, WHITE));
     Board before = clone_board(&board);
 
-    report = move(&board, king, create_coords(7, 6));
+    report = make_move(&board, king, create_coords(7, 6));
 
-    CU_ASSERT_TRUE(report.is_roque_move);
+    CU_ASSERT_TRUE(report.is_castling_move);
     CU_ASSERT_EQUAL(get_piece(&board, create_coords(7, 6)).name, KING);
     CU_ASSERT_EQUAL(get_piece(&board, create_coords(7, 5)).name, ROOK);
-    CU_ASSERT_FALSE(board.roque.white.king);
+    CU_ASSERT_FALSE(CASTLE_K(board, WHITE));
 
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_and_undo_promotion_position(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords source = create_coords(1, 0);
     Coords destination = create_coords(0, 0);
     MoveReport report;
@@ -142,29 +141,29 @@ void test_move_and_undo_promotion_position(void) {
     set_piece(&board, source, create_piece(PAWN, WHITE));
     Board before = clone_board(&board);
 
-    report = move(&board, source, destination);
+    report = make_move(&board, source, destination);
     CU_ASSERT_EQUAL(get_piece(&board, destination).name, PAWN);
 
     set_piece(&board, destination, create_piece(QUEEN, WHITE));
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_move_updates_rook_rights(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords rook = create_coords(7, 0);
     set_piece(&board, rook, create_piece(ROOK, WHITE));
     Board before = clone_board(&board);
 
-    MoveReport report = move(&board, rook, create_coords(6, 0));
-    CU_ASSERT_FALSE(board.roque.white.rook_a);
+    MoveReport report = make_move(&board, rook, create_coords(6, 0));
+    CU_ASSERT_FALSE(CASTLE_Q(board, WHITE));
 
-    undo_move(&board, report);
+    undo_move(&board, &report);
     assert_boards_equal(&before, &board);
 }
 
 void test_capture_updates_captured_rook_rights(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords king = create_coords(0, 4);
     Coords captured_rook = create_coords(0, 0);
     Coords other_rook = create_coords(0, 7);
@@ -175,11 +174,11 @@ void test_capture_updates_captured_rook_rights(void) {
     set_piece(&board, other_rook, create_piece(ROOK, BLACK));
     set_piece(&board, capturing_rook, create_piece(ROOK, WHITE));
 
-    move(&board, capturing_rook, captured_rook);
-    move(&board, other_rook, captured_rook);
+    make_move(&board, capturing_rook, captured_rook);
+    make_move(&board, other_rook, captured_rook);
 
-    CU_ASSERT_FALSE(board.roque.black.rook_a);
-    CU_ASSERT_FALSE(is_roque_move(&board, king, create_coords(0, 2)));
+    CU_ASSERT_FALSE(CASTLE_Q(board, BLACK));
+    CU_ASSERT_FALSE(is_castling_move(&board, king, create_coords(0, 2)));
 }
 
 void register_chessboard_move_tests(void) {

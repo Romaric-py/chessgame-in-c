@@ -6,7 +6,7 @@
 #include "king_check.h"
 
 static Board board_with_kings(Coords king_pos) {
-    Board board = create_board();
+    Board board = create_empty_board();
     set_piece(&board, king_pos, create_piece(KING, WHITE));
     set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
     return board;
@@ -14,33 +14,33 @@ static Board board_with_kings(Coords king_pos) {
 
 void test_empty_square_attacked_by_each_piece(void) {
     const Coords target = create_coords(4, 4);
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(3, 3), create_piece(PAWN, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(2, 3), create_piece(KNIGHT, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(1, 1), create_piece(BISHOP, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(4, 0), create_piece(ROOK, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(0, 0), create_piece(QUEEN, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(3, 3), create_piece(KING, BLACK));
     CU_ASSERT_TRUE(is_empty_square(&board, target));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
@@ -111,20 +111,20 @@ void test_square_not_attacked_through_blocking_piece(void) {
 }
 
 void test_king_in_check_for_the_correct_color(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(7, 4), create_piece(KING, WHITE));
     set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
     CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(0, 4), create_piece(KING, BLACK));
     set_piece(&board, create_coords(7, 4), create_piece(ROOK, WHITE));
     CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
 }
 
 void test_king_not_in_check_when_attack_is_blocked(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(7, 4), create_piece(KING, WHITE));
     set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
@@ -133,26 +133,26 @@ void test_king_not_in_check_when_attack_is_blocked(void) {
 }
 
 void test_empty_square_not_attacked(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords target = create_coords(4, 4);
 
     set_piece(&board, create_coords(2, 2), create_piece(KNIGHT, BLACK));
     CU_ASSERT_FALSE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(3, 3), create_piece(PAWN, BLACK));
     CU_ASSERT_FALSE(is_square_attacked(&board, create_coords(3, 4)));
 }
 
 void test_pawn_attacks_both_diagonals_for_each_color(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(3, 3), create_piece(PAWN, BLACK));
     CU_ASSERT_TRUE(is_square_attacked(&board, create_coords(4, 2)));
     CU_ASSERT_TRUE(is_square_attacked(&board, create_coords(4, 4)));
     CU_ASSERT_FALSE(is_square_attacked(&board, create_coords(2, 3)));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(4, 3), create_piece(PAWN, WHITE));
     CU_ASSERT_TRUE(is_square_attacked(&board, create_coords(3, 2)));
     CU_ASSERT_TRUE(is_square_attacked(&board, create_coords(3, 4)));
@@ -160,7 +160,7 @@ void test_pawn_attacks_both_diagonals_for_each_color(void) {
 }
 
 void test_sliding_attacks_in_all_directions(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords target = create_coords(4, 4);
 
     set_piece(&board, create_coords(4, 0), create_piece(ROOK, BLACK));
@@ -169,7 +169,7 @@ void test_sliding_attacks_in_all_directions(void) {
     set_piece(&board, create_coords(7, 4), create_piece(ROOK, BLACK));
     CU_ASSERT_TRUE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(0, 0), create_piece(BISHOP, BLACK));
     set_piece(&board, create_coords(0, 7), create_piece(BISHOP, BLACK));
     set_piece(&board, create_coords(7, 0), create_piece(BISHOP, BLACK));
@@ -178,28 +178,28 @@ void test_sliding_attacks_in_all_directions(void) {
 }
 
 void test_same_color_piece_does_not_attack_target(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords target = create_coords(4, 4);
 
     set_piece(&board, target, create_piece(KING, WHITE));
     set_piece(&board, create_coords(4, 0), create_piece(ROOK, WHITE));
     CU_ASSERT_FALSE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, target, create_piece(KING, WHITE));
     set_piece(&board, create_coords(3, 3), create_piece(PAWN, WHITE));
     CU_ASSERT_FALSE(is_square_attacked(&board, target));
 }
 
 void test_attack_stops_at_blocker(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     Coords target = create_coords(4, 4);
 
     set_piece(&board, create_coords(4, 0), create_piece(ROOK, BLACK));
     set_piece(&board, create_coords(4, 2), create_piece(PAWN, WHITE));
     CU_ASSERT_FALSE(is_square_attacked(&board, target));
 
-    board = create_board();
+    board = create_empty_board();
     set_piece(&board, create_coords(0, 0), create_piece(BISHOP, BLACK));
     set_piece(&board, create_coords(2, 2), create_piece(PAWN, WHITE));
     CU_ASSERT_FALSE(is_square_attacked(&board, target));

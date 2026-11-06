@@ -88,7 +88,7 @@ void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMo
 
     write_move(moves_file, move_to_play.src, move_to_play.dest);
     can_promote = can_promote_pawn(board, move_to_play.src, move_to_play.dest);
-    move(board, move_to_play.src, move_to_play.dest);
+    make_move(board, move_to_play.src, move_to_play.dest);
 
     if (can_promote) {
         if (move_to_play.promotion == NONE) { // probably a human move

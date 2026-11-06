@@ -24,7 +24,7 @@ bool is_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
         case QUEEN:
             return is_queen_valid_move(board, src_pos, dest_pos);
         case KING:
-            if (is_roque_move(board, src_pos, dest_pos)) {
+            if (is_castling_move(board, src_pos, dest_pos)) {
                 return true;
             }
             return is_king_valid_move(board, src_pos, dest_pos);
@@ -33,6 +33,9 @@ bool is_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
     }
 }
 
+static bool is_reachable_by_piece(const Board *board, Color color, Coords dest_pos) {
+    return is_empty_square(board, dest_pos) || (get_piece(board, dest_pos).color == get_opponent_color(color));
+}
 
 bool is_pawn_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
     int delta_row = 1;
@@ -93,7 +96,7 @@ bool is_knight_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
     return (
         (abs(row_diff) == 2 && abs(col_diff) == 1) ||
         (abs(row_diff) == 1 && abs(col_diff) == 2)
-    ) && (is_empty_square(board, dest_pos) || get_piece(board, dest_pos).color == get_opponent_color(piece.color)); // dest_pos square is not occuped by the same color
+    ) && is_reachable_by_piece(board, piece.color, dest_pos);
 }
 
 bool is_rook_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
@@ -111,7 +114,7 @@ bool is_rook_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
         sign(dest_pos.row - src_pos.row),
         sign(dest_pos.col - src_pos.col)
     );
-    return range_free && (is_empty_square(board, dest_pos) || (get_piece(board, dest_pos).color == get_opponent_color(piece.color)));
+    return is_reachable_by_piece(board, piece.color, dest_pos) && range_free;
 }
 
 bool is_bishop_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
@@ -135,7 +138,7 @@ bool is_bishop_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
         sign(col_diff)
     );
 
-    return range_free && (is_empty_square(board, dest_pos) || (get_piece(board, dest_pos).color == get_opponent_color(piece.color)));
+    return is_reachable_by_piece(board, piece.color, dest_pos) && range_free;
 }
 
 bool is_queen_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
@@ -149,9 +152,8 @@ bool is_king_valid_move(const Board *board, Coords src_pos, Coords dest_pos) {
     int col_diff = dest_pos.col - src_pos.col;
 
     return (
-        max(abs(row_diff), abs(col_diff)) == 1 &&
-        (is_empty_square(board, dest_pos) ||
-        get_piece(board, dest_pos).color == get_opponent_color(piece.color))
+        is_reachable_by_piece(board, piece.color, dest_pos) &&
+        max(abs(row_diff), abs(col_diff)) == 1
     );
 }
 

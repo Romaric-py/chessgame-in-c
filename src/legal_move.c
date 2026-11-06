@@ -42,9 +42,9 @@ bool is_legal_move(Board *board, Coords src_pos, Coords dest_pos) {
     } 
     // Here, the move is valid (and the src_pos square is not empty)
     Color color = get_piece(board, src_pos).color;
-    MoveReport report = move(board, src_pos, dest_pos);
+    MoveReport report = make_move(board, src_pos, dest_pos);
     bool leaves_king_in_check = is_king_in_check(board, color);
-    undo_move(board, report);
+    undo_move(board, &report);
 
     return !leaves_king_in_check;
 }

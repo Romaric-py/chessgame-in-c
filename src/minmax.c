@@ -5,11 +5,12 @@
 #include "special_move.h"
 #include "utils.h"
 #include "transposition_table.h"
+#include "piece_value.h"
 
 uint64_t board_hash = 0ULL; // Global variable to store the current board hash
 
 static MoveReport apply_search_move(Board *board, Move move_to_apply) {
-    MoveReport report = move(board, move_to_apply.src, move_to_apply.dest);
+    MoveReport report = make_move(board, move_to_apply.src, move_to_apply.dest);
 
     if (can_promote_pawn(board, move_to_apply.dest, move_to_apply.dest)) {
         Piece pawn = get_piece(board, move_to_apply.dest);
@@ -163,11 +164,11 @@ int minmax_ab_parallel(Board *board, Color color_max, Color curr_color, Move *be
 
 int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Move move_to_apply, unsigned int depth, int alpha, int beta) {
     MoveReport report = apply_search_move(board, move_to_apply);
-    increment_hash_board_state(&board_hash, board, report);
+    increment_hash_board_state(&board_hash, board, &report);
 
     if (depth <= 0 || is_end_game(board)) {
-        increment_hash_board_state(&board_hash, board, report); // revert the hash back
-        undo_move(board, report);
+        increment_hash_board_state(&board_hash, board, &report); // revert the hash back
+        undo_move(board, &report);
         return evaluate_board(board, color_max);
     }
 
@@ -175,27 +176,16 @@ int evaluate_move_ab(Board *board, Color color_max, Color curr_color, Move move_
     int score = minmax_ab(board, color_max, opponent_color,
                      &move_to_apply, depth - 1, alpha, beta);
     // undo move
-    increment_hash_board_state(&board_hash, board, report); // revert the hash back
-    undo_move(board, report);
+    increment_hash_board_state(&board_hash, board, &report); // revert the hash back
+    undo_move(board, &report);
     return score;
 }
 
 
 int _present_pieces_score(Board *board, Color color) {
-    Piece piece;
-    unsigned int row, col;
-    unsigned int score = 0;
-    for (row = 0; row < BOARD_SIZE; row++) {
-        for (col = 0; col < BOARD_SIZE; col++) {
-            piece = get_piece(board, create_coords(row, col));
-            if (piece.color == color) {
-                if (piece.name == PAWN) score += 1;
-                else if (piece.name == ROOK) score += 5;
-                else if (piece.name == BISHOP) score += 3;
-                else if (piece.name == KNIGHT) score += 3;
-                else if (piece.name == QUEEN) score += 9;
-            }
-        }
+    int score = 0;
+    for (unsigned int piece_name = PAWN; piece_name <= QUEEN; piece_name++) {
+        score += PIECE_COUNT(*board, color, piece_name) * get_piece_value(piece_name);
     }
     return score;
 }

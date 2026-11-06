@@ -8,6 +8,7 @@
 
 static void _update_roque_flags(Board *board, Coords src_pos);
 static void _update_king_position(Board *board, Coords src_pos, Coords dest_pos);
+static void _update_move_counters(Board *board, Piece moved_piece, Piece captured_piece);
 
 // Color
 Color get_opponent_color(Color color) {
@@ -39,16 +40,26 @@ bool are_coords_equal(Coords coords1, Coords coords2) {
 
 // Board
 static void _init_flags(Board *board) {
-    board->enpassant.flag = false;
-    board->roque.black.king = true;
-    board->roque.black.rook_a = true;
-    board->roque.black.rook_h = true;
-    board->roque.white.king = true;
-    board->roque.white.rook_a = true;
-    board->roque.white.rook_h = true;
+    CASTLE_Q(*board, WHITE) = true;
+    CASTLE_K(*board, WHITE) = true;
+    CASTLE_Q(*board, BLACK) = true;
+    CASTLE_K(*board, BLACK) = true;
+
+    board->meta.enpassant.is_active = false;
+    board->meta.current_turn = WHITE;
+    board->meta.halfmove_clock = 0;
+    board->meta.fullmove_number = 1;
 }
 
-Board create_board() {
+static void _init_piece_counts(Board *board) {
+    for (int color = 0; color < 2; color++) {
+        for (int piece_name = 0; piece_name < 6; piece_name++) {
+            board->meta.colors[color].piece_counts[piece_name] = 0;
+        }
+    }
+}
+
+Board create_empty_board() {
     Board board;
     unsigned int row, col;
 
@@ -58,13 +69,14 @@ Board create_board() {
         }
     }
     _init_flags(&board);
+    _init_piece_counts(&board);
     
     return board;
 }
 
 Board clone_board(const Board *src_board) {
     if (src_board == NULL) {
-        return create_board();
+        return create_empty_board();
     }
 
     return *src_board; // shallow copy is enough since the board does not contain any pointer
@@ -108,11 +120,17 @@ void init_board(Board *board) {
         board->squares[row][3] = create_piece(QUEEN, color);
         board->squares[row][4] = create_piece(KING, color);
 
-        board->king_pos.black = create_coords(0, 4);
-        board->king_pos.white = create_coords(7, 4);
+        KING_POS(*board, color) = create_coords(row, 4);
     }
-    _init_flags(board);
+    
+    PIECE_COUNT(*board, WHITE, PAWN) = 8;
+    PIECE_COUNT(*board, WHITE, ROOK) = 2;
+    PIECE_COUNT(*board, WHITE, KNIGHT) = 2;
+    PIECE_COUNT(*board, WHITE, BISHOP) = 2;
+    PIECE_COUNT(*board, WHITE, QUEEN) = 1;
+    PIECE_COUNT(*board, WHITE, KING) = 1;
 
+    _init_flags(board);
 }
 
 Piece get_piece(const Board *board, Coords pos) {
@@ -120,25 +138,30 @@ Piece get_piece(const Board *board, Coords pos) {
 }
 
 void set_piece(Board *board, Coords pos, Piece piece) {
+    if (!is_empty_square(board, pos)) {
+        Piece p = get_piece(board, pos);
+        PIECE_COUNT(*board, p.color, p.name)--;
+    }
+
     board->squares[pos.row][pos.col] = piece;
+
     if (piece.name == KING) {
-        if (piece.color == BLACK) {
-            board->king_pos.black = pos;
-        } else {
-            board->king_pos.white = pos;
-        }
+        KING_POS(*board, piece.color) = pos;
+    }
+    if (!is_none_piece(piece)) {
+        PIECE_COUNT(*board, piece.color, piece.name)++;
     }
 }
 
 void switch_turn(Board *board) {
-    board->current_turn = get_opponent_color(board->current_turn);
+    board->meta.current_turn = get_opponent_color(board->meta.current_turn);
 }
 
 bool is_empty_square(const Board *board, Coords pos) {
     return is_none_piece(get_piece(board, pos));
 }
 
-void compute_rook_move_for_roque(Coords king_src_pos, Coords king_dest_pos, Coords *rook_src_pos, Coords *rook_dest_pos) {
+void compute_rook_move_for_castling(Coords king_src_pos, Coords king_dest_pos, Coords *rook_src_pos, Coords *rook_dest_pos) {
     unsigned int rook_col;
     rook_col = (king_dest_pos.col < king_src_pos.col) ? 0 : BOARD_SIZE-1;
     *rook_src_pos = create_coords(king_dest_pos.row, rook_col);
@@ -146,37 +169,30 @@ void compute_rook_move_for_roque(Coords king_src_pos, Coords king_dest_pos, Coor
     *rook_dest_pos = create_coords(king_dest_pos.row, rook_col);
 }
 
-// Assumes the move is legal before calling this function
-MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
+// Ensure that the move is legal before calling this function
+MoveReport make_move(Board *board, Coords src_pos, Coords dest_pos) {
     MoveReport report = {
-        .moved_color = get_piece(board, src_pos).color,
         .src_pos = src_pos,
         .dest_pos = dest_pos,
         .moved_piece = get_piece(board, src_pos),
         .captured_piece = get_piece(board, dest_pos),
-        .old_state = {
-            .enpassant = board->enpassant,
-            .roque = board->roque,
-            .king_pos = board->king_pos
-        },
-        .is_roque_move = is_roque_move(board, src_pos, dest_pos),
+        .old_meta = board->meta,
+        .is_castling_move = is_castling_move(board, src_pos, dest_pos),
         .is_enpassant_move = is_enpassant_move(board, src_pos, dest_pos)
     };
 
-    /* if (!is_valid_move(board, src_pos, dest_pos)) {
-        return report;
-    } */
 
     if (report.is_enpassant_move) {
-        report.captured_piece = get_piece(board, board->enpassant.pos);
-        set_piece(board, board->enpassant.pos, EMPTY_PIECE);
+        Coords captured_pawn_pos = create_coords(src_pos.row, dest_pos.col);
+        report.captured_piece = get_piece(board, captured_pawn_pos);
+        set_piece(board, captured_pawn_pos, EMPTY_PIECE);
     }
 
     /* since the move down here, just make it for one piece, we 
-        to manually move the rook for roque move */
-    if (report.is_roque_move) {
+        to manually move the rook for castling move */
+    if (report.is_castling_move) {
         Coords rook_src_pos, rook_dest_pos;
-        compute_rook_move_for_roque(src_pos, dest_pos, &rook_src_pos, &rook_dest_pos);
+        compute_rook_move_for_castling(src_pos, dest_pos, &rook_src_pos, &rook_dest_pos);
 
         set_piece(board, rook_dest_pos, get_piece(board, rook_src_pos));
         set_piece(board, rook_src_pos, EMPTY_PIECE);
@@ -184,41 +200,46 @@ MoveReport move(Board *board, Coords src_pos, Coords dest_pos) {
 
     // "en passant" flag managing
     if (is_pawn_2steps_move(board, src_pos, dest_pos)) {
-        board->enpassant.flag = true;
-        board->enpassant.pos = dest_pos;
+        board->meta.enpassant.is_active = true;
+        board->meta.enpassant.target_pos = create_coords(
+            (src_pos.row + dest_pos.row) / 2, dest_pos.col);
     } else {
-        board->enpassant.flag = false;
+        board->meta.enpassant.is_active = false;
     }
     
-    _update_roque_flags(board, dest_pos); // to invalidate the roque flag if a rook has been captured
-    _update_roque_flags(board, src_pos); // to invalidate the roque flag if a rook or a king has been moved
+    _update_roque_flags(board, dest_pos); // if a rook has been captured
+    _update_roque_flags(board, src_pos); // if a rook or a king has been moved
     _update_king_position(board, src_pos, dest_pos);
+    _update_move_counters(board, report.moved_piece, report.captured_piece);
+
     set_piece(board, dest_pos, get_piece(board, src_pos));
     set_piece(board, src_pos, EMPTY_PIECE);
     switch_turn(board);
     return report;
 }
 
-void undo_move(Board *board, MoveReport move_report) {
+void undo_move(Board *board, const MoveReport *move_report) {
     // Restore the board state to what it was before the move
-    board->enpassant = move_report.old_state.enpassant;
-    board->roque = move_report.old_state.roque;
-    board->king_pos = move_report.old_state.king_pos;
+    board->meta = move_report->old_meta;
 
-    if (move_report.is_enpassant_move) {
-        set_piece(board, board->enpassant.pos, move_report.captured_piece);
+    if (move_report->is_enpassant_move) {
+        set_piece(
+            board, 
+            create_coords(move_report->src_pos.row, move_report->dest_pos.col), 
+            move_report->captured_piece
+        );
     }
-    if (move_report.is_roque_move) {
+    if (move_report->is_castling_move) {
         Coords rook_src_pos, rook_dest_pos;
-        compute_rook_move_for_roque(move_report.src_pos, move_report.dest_pos, &rook_src_pos, &rook_dest_pos);
+        compute_rook_move_for_castling(move_report->src_pos, move_report->dest_pos, &rook_src_pos, &rook_dest_pos);
 
         set_piece(board, rook_src_pos, get_piece(board, rook_dest_pos));
         set_piece(board, rook_dest_pos, EMPTY_PIECE);
     }
 
-    set_piece(board, move_report.src_pos, move_report.moved_piece);
-    set_piece(board, move_report.dest_pos, 
-        move_report.is_enpassant_move ? EMPTY_PIECE : move_report.captured_piece);
+    set_piece(board, move_report->src_pos, move_report->moved_piece);
+    set_piece(board, move_report->dest_pos, 
+        move_report->is_enpassant_move ? EMPTY_PIECE : move_report->captured_piece);
 }
 
 // Ensure the move is valid before calling this function
@@ -228,28 +249,36 @@ static void _update_roque_flags(Board *board, Coords src_pos) {
     if (piece.name != KING && piece.name != ROOK) return;
     // Starting here, we ensure that it's a rook or a king
 
-    struct _oneColorRoqueState *roque_state = (piece.color == BLACK) ? &board->roque.black : &board->roque.white;
-
     if (piece.name == KING) {
-        roque_state->king = false;
-    } else {
-        if (src_pos.col == 0) {
-            roque_state->rook_a = false;
-        } else if (src_pos.col == BOARD_SIZE - 1) {
-            roque_state->rook_h = false;
-        }
+        CASTLE_Q(*board, piece.color) = false;
+        CASTLE_K(*board, piece.color) = false;
+    } 
+    else if (src_pos.col == 0) {
+        CASTLE_Q(*board, piece.color) = false;
+    } else if (src_pos.col == BOARD_SIZE - 1) {
+        CASTLE_K(*board, piece.color) = false;
     }
+        
 }
 
 // Ensure the move is valid before calling this function
 static void _update_king_position(Board *board, Coords src_pos, Coords dest_pos) {
     Piece piece = get_piece(board, src_pos);
+    if (piece.name != KING)
+        return;
+    KING_POS(*board, piece.color) = dest_pos;
+}
 
-    if (piece.name != KING) return;
-
-    if (piece.color == BLACK) {
-        board->king_pos.black = dest_pos;
+static void _update_move_counters(Board *board, Piece moved_piece, Piece captured_piece) {
+    // Update the halfmove clock
+    if (moved_piece.name == PAWN || !is_none_piece(captured_piece)) {
+        board->meta.halfmove_clock = 0;
     } else {
-        board->king_pos.white = dest_pos;
+        board->meta.halfmove_clock++;
+    }
+
+    // Update the fullmove number
+    if (moved_piece.color == BLACK) {
+        board->meta.fullmove_number++;
     }
 }

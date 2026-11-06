@@ -10,7 +10,7 @@
 #include "legal_move.h"
 
 static Board board_with_kings(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
     set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
     set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
     return board;
@@ -43,7 +43,7 @@ void test_game_check_for_black(void) {
 }
 
 void test_checkmate(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
     set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
@@ -55,7 +55,7 @@ void test_checkmate(void) {
 }
 
 void test_stalemate(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
     set_piece(&board, create_coords(6, 5), create_piece(KING, BLACK));
@@ -67,7 +67,7 @@ void test_stalemate(void) {
 }
 
 void test_checkmate_and_stalemate_are_turn_dependent(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
     set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
@@ -78,7 +78,7 @@ void test_checkmate_and_stalemate_are_turn_dependent(void) {
 }
 
 void test_checkmate_with_captured_escape_piece(void) {
-    Board board = create_board();
+    Board board = create_empty_board();
 
     set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
     set_piece(&board, create_coords(2, 2), create_piece(KING, WHITE));
