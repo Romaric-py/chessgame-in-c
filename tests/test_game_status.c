@@ -10,97 +10,96 @@
 #include "legal_move.h"
 
 static Board board_with_kings(void) {
-    Board board = create_empty_board();
-    set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
-    set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
-    return board;
+  Board board = create_empty_board();
+  set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
+  set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
+  return board;
 }
 
 void test_game_in_progress(void) {
-    Board board = board_with_kings();
-    set_piece(&board, create_coords(6, 7), create_piece(PAWN, WHITE));
+  Board board = board_with_kings();
+  set_piece(&board, create_coords(6, 7), create_piece(PAWN, WHITE));
 
-    CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_IN_PROGRESS);
-    CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
 }
 
 void test_game_check_with_legal_escape(void) {
-    Board board = board_with_kings();
+  Board board = board_with_kings();
 
-    set_piece(&board, create_coords(0, 7), create_piece(ROOK, BLACK));
-    CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
-    CU_ASSERT_TRUE(has_legal_move(&board, WHITE));
-    CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECK);
+  set_piece(&board, create_coords(0, 7), create_piece(ROOK, BLACK));
+  CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
+  CU_ASSERT_TRUE(has_legal_move(&board, WHITE));
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECK);
 }
 
 void test_game_check_for_black(void) {
-    Board board = board_with_kings();
+  Board board = board_with_kings();
 
-    set_piece(&board, create_coords(7, 0), create_piece(ROOK, WHITE));
-    CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
-    CU_ASSERT_TRUE(has_legal_move(&board, BLACK));
-    CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECK);
+  set_piece(&board, create_coords(7, 0), create_piece(ROOK, WHITE));
+  CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
+  CU_ASSERT_TRUE(has_legal_move(&board, BLACK));
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECK);
 }
 
 void test_checkmate(void) {
-    Board board = create_empty_board();
+  Board board = create_empty_board();
 
-    set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
-    set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
-    set_piece(&board, create_coords(6, 6), create_piece(QUEEN, BLACK));
+  set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
+  set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
+  set_piece(&board, create_coords(6, 6), create_piece(QUEEN, BLACK));
 
-    CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
-    CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
-    CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
+  CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
+  CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
 }
 
 void test_stalemate(void) {
-    Board board = create_empty_board();
+  Board board = create_empty_board();
 
-    set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
-    set_piece(&board, create_coords(6, 5), create_piece(KING, BLACK));
-    set_piece(&board, create_coords(5, 6), create_piece(QUEEN, BLACK));
+  set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
+  set_piece(&board, create_coords(6, 5), create_piece(KING, BLACK));
+  set_piece(&board, create_coords(5, 6), create_piece(QUEEN, BLACK));
 
-    CU_ASSERT_FALSE(is_king_in_check(&board, WHITE));
-    CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
-    CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_STALEMATE);
+  CU_ASSERT_FALSE(is_king_in_check(&board, WHITE));
+  CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_STALEMATE);
 }
 
 void test_checkmate_and_stalemate_are_turn_dependent(void) {
-    Board board = create_empty_board();
+  Board board = create_empty_board();
 
-    set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
-    set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
-    set_piece(&board, create_coords(6, 6), create_piece(QUEEN, BLACK));
+  set_piece(&board, create_coords(7, 7), create_piece(KING, WHITE));
+  set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
+  set_piece(&board, create_coords(6, 6), create_piece(QUEEN, BLACK));
 
-    CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
-    CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
 }
 
 void test_checkmate_with_captured_escape_piece(void) {
-    Board board = create_empty_board();
+  Board board = create_empty_board();
 
-    set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
-    set_piece(&board, create_coords(2, 2), create_piece(KING, WHITE));
-    set_piece(&board, create_coords(1, 1), create_piece(QUEEN, WHITE));
+  set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
+  set_piece(&board, create_coords(2, 2), create_piece(KING, WHITE));
+  set_piece(&board, create_coords(1, 1), create_piece(QUEEN, WHITE));
 
-    CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
-    CU_ASSERT_FALSE(has_legal_move(&board, BLACK));
-    CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECKMATE);
+  CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
+  CU_ASSERT_FALSE(has_legal_move(&board, BLACK));
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECKMATE);
 }
 
 void register_game_status_tests(void) {
-    CU_pSuite suite = CU_add_suite("Game_Status_Suite", NULL, NULL);
+  CU_pSuite suite = CU_add_suite("Game_Status_Suite", NULL, NULL);
 
-    CU_add_test(suite, "test_game_in_progress", test_game_in_progress);
-    CU_add_test(suite, "test_game_check_with_legal_escape",
-                test_game_check_with_legal_escape);
-    CU_add_test(suite, "test_game_check_for_black",
-                test_game_check_for_black);
-    CU_add_test(suite, "test_checkmate", test_checkmate);
-    CU_add_test(suite, "test_stalemate", test_stalemate);
-    CU_add_test(suite, "test_checkmate_and_stalemate_are_turn_dependent",
-                test_checkmate_and_stalemate_are_turn_dependent);
-    CU_add_test(suite, "test_checkmate_with_captured_escape_piece",
-                test_checkmate_with_captured_escape_piece);
+  CU_add_test(suite, "test_game_in_progress", test_game_in_progress);
+  CU_add_test(suite, "test_game_check_with_legal_escape",
+              test_game_check_with_legal_escape);
+  CU_add_test(suite, "test_game_check_for_black", test_game_check_for_black);
+  CU_add_test(suite, "test_checkmate", test_checkmate);
+  CU_add_test(suite, "test_stalemate", test_stalemate);
+  CU_add_test(suite, "test_checkmate_and_stalemate_are_turn_dependent",
+              test_checkmate_and_stalemate_are_turn_dependent);
+  CU_add_test(suite, "test_checkmate_with_captured_escape_piece",
+              test_checkmate_with_captured_escape_piece);
 }

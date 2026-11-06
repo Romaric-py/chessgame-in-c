@@ -2,8 +2,8 @@
 #define UTILS_H
 
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
 
 #include "chessboard.h"
 

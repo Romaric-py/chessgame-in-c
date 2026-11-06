@@ -1,14 +1,14 @@
 #ifndef GAME_STATUS_H
 #define GAME_STATUS_H
 
-#include <stdbool.h>
 #include "chessboard.h"
+#include <stdbool.h>
 
 typedef enum GameStatus {
-    GAME_IN_PROGRESS,
-    GAME_CHECK,
-    GAME_CHECKMATE,
-    GAME_STALEMATE
+  GAME_IN_PROGRESS,
+  GAME_CHECK,
+  GAME_CHECKMATE,
+  GAME_STALEMATE
 } GameStatus;
 
 // The argument `color` indicates the color that it is the turn

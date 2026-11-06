@@ -10,6 +10,7 @@ typedef void (*FuncGetMove)(Board *, Color, Move *);
 
 void get_human_move(Board *board, Color color, Move *move);
 void get_ai_move(Board *board, Color color, Move *move);
-void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMove white_get_move);
+void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
+                FuncGetMove white_get_move);
 
 #endif

@@ -3,159 +3,160 @@
 #include <string.h>
 #include <unistd.h>
 
-#include "play_chess.h"
-#include "legal_move.h"
-#include "render_tui.h"
 #include "game_status.h"
+#include "legal_move.h"
 #include "minmax.h"
-#include "utils.h"
+#include "play_chess.h"
 #include "position_history.h"
+#include "render_tui.h"
 #include "special_move.h"
-
+#include "utils.h"
 
 void get_human_move(Board *board, Color color, Move *move) {
+  do {
     do {
-        do {
-            read_coords("From", &move->src);
-        } while (get_piece(board, move->src).color != color);
+      read_coords("From", &move->src);
+    } while (get_piece(board, move->src).color != color);
 
-        clear_screen();
-        display_board_with_hint(board, move->src);
-        read_coords("To", &move->dest);
-        clear_screen();
-        display_board(board);
+    clear_screen();
+    display_board_with_hint(board, move->src);
+    read_coords("To", &move->dest);
+    clear_screen();
+    display_board(board);
 
-    } while (!is_legal_move(board, move->src, move->dest));
+  } while (!is_legal_move(board, move->src, move->dest));
 
-    // The following field values can be wrong but that doesn't matter since they are only used for ai move.
-    move->is_capture = false;
-    move->promotion = NONE;
+  // The following field values can be wrong but that doesn't matter since they
+  // are only used for ai move.
+  move->is_capture = false;
+  move->promotion = NONE;
 }
 
 void choose_piece_name(char *prompt, PieceName *name) {
-    char pn;
-    do {
-        printf("%s", prompt);
-        pn = getchar();
-        clear_stdin_buffer();
-    } while (pn != 'N' && pn != 'R' &&
-            pn != 'Q' && pn != 'B' &&
-            pn != 'n' && pn != 'r' &&
-            pn != 'q' && pn != 'b');
+  char pn;
+  do {
+    printf("%s", prompt);
+    pn = getchar();
+    clear_stdin_buffer();
+  } while (pn != 'N' && pn != 'R' && pn != 'Q' && pn != 'B' && pn != 'n' &&
+           pn != 'r' && pn != 'q' && pn != 'b');
 
-    switch (pn) {
-        case 'n':
-        case 'N':
-            *name = KNIGHT;
-            break;
-        case 'b':
-        case 'B':
-            *name = BISHOP;
-            break;
-        case 'q':
-        case 'Q':
-            *name = QUEEN;
-            break;
-        case 'r':
-        case 'R':
-            *name = ROOK;
-            break;
-        default:
-            *name = NONE;
-            break;
-    }
+  switch (pn) {
+  case 'n':
+  case 'N':
+    *name = KNIGHT;
+    break;
+  case 'b':
+  case 'B':
+    *name = BISHOP;
+    break;
+  case 'q':
+  case 'Q':
+    *name = QUEEN;
+    break;
+  case 'r':
+  case 'R':
+    *name = ROOK;
+    break;
+  default:
+    *name = NONE;
+    break;
+  }
 }
-
 
 void get_ai_move(Board *board, Color color, Move *move) {
-    // minmax_ab_parallel(board, color, color, move, DEPTH);
-    minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
+  // minmax_ab_parallel(board, color, color, move, DEPTH);
+  minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
 }
 
-void make_pawn_promotion(Board *board, Color color, Coords pos, PieceName promotion) {
-    // Promotion
-    Piece piece = create_piece(promotion, color);
-    set_piece(board, pos, piece);
+void make_pawn_promotion(Board *board, Color color, Coords pos,
+                         PieceName promotion) {
+  // Promotion
+  Piece piece = create_piece(promotion, color);
+  set_piece(board, pos, piece);
 }
 
-void chess_turn(Board *board, Color color, FuncGetMove black_get_move, FuncGetMove white_get_move, FILE *moves_file) {    
-    printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
-    Move move_to_play;
-    bool can_promote;
+void chess_turn(Board *board, Color color, FuncGetMove black_get_move,
+                FuncGetMove white_get_move, FILE *moves_file) {
+  printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
+  Move move_to_play;
+  bool can_promote;
 
-    FuncGetMove get_move = (color == BLACK) ? black_get_move : white_get_move;
-    get_move(board, color, &move_to_play);
+  FuncGetMove get_move = (color == BLACK) ? black_get_move : white_get_move;
+  get_move(board, color, &move_to_play);
 
-    write_move(moves_file, move_to_play.src, move_to_play.dest);
-    can_promote = can_promote_pawn(board, move_to_play.src, move_to_play.dest);
-    make_move(board, move_to_play.src, move_to_play.dest);
+  write_move(moves_file, move_to_play.src, move_to_play.dest);
+  can_promote = can_promote_pawn(board, move_to_play.src, move_to_play.dest);
+  make_move(board, move_to_play.src, move_to_play.dest);
 
-    if (can_promote) {
-        if (move_to_play.promotion == NONE) { // probably a human move
-            choose_piece_name("Promote pawn to (N, R, Q, B): ", &move_to_play.promotion);
-        }
-        make_pawn_promotion(board, color,  move_to_play.dest, move_to_play.promotion);
+  if (can_promote) {
+    if (move_to_play.promotion == NONE) { // probably a human move
+      choose_piece_name("Promote pawn to (N, R, Q, B): ",
+                        &move_to_play.promotion);
     }
-    
-    clear_screen();
-    display_board(board);
+    make_pawn_promotion(board, color, move_to_play.dest,
+                        move_to_play.promotion);
+  }
+
+  clear_screen();
+  display_board(board);
 }
 
+void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
+                FuncGetMove white_get_move) {
+  Board board;
+  FILE *moves_file = fopen(MOVE_RECORD_FILE, "w");
+  PositionHistory history = create_position_history();
 
-void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move, FuncGetMove white_get_move) {
-    Board board;
-    FILE *moves_file = fopen(MOVE_RECORD_FILE, "w");
-    PositionHistory history = create_position_history();
+  if (moves_file == NULL) {
+    perror(MOVE_RECORD_FILE);
+    *draw = true;
+    return;
+  }
 
-    if (moves_file == NULL) {
-        perror(MOVE_RECORD_FILE);
-        *draw = true;
-        return;
-    }
+  init_board(&board);
 
-    init_board(&board);
-
-    if (!add_position_to_history(&history, &board, WHITE)) {
-        fclose(moves_file);
-        *draw = true;
-        return;
-    }
-
-    Color opponent_color, curr_color = WHITE;
-    bool end_game = false;
-    GameStatus game_status = GAME_IN_PROGRESS;
-
-    clear_screen();
-    display_board(&board);
-
-    while (!end_game) {
-        chess_turn(&board, curr_color, black_get_move, white_get_move, moves_file);
-
-        opponent_color = get_opponent_color(curr_color);
-        game_status = get_game_status(&board, opponent_color);
-
-        if (game_status == GAME_CHECKMATE) {
-            *winner = curr_color;
-            *draw = false;
-            end_game = true;
-        } else if (game_status == GAME_STALEMATE) {
-            *draw = true;
-            end_game = true;
-        } 
-        
-        // History management
-        else if (!add_position_to_history(&history, &board, opponent_color)) {
-            fprintf(stderr, "Unable to record the position history\n");
-            *draw = true;
-            end_game = true;
-        } else if (is_threefold_repetition(&history, &board, opponent_color)) {
-            *draw = true;
-            end_game = true;
-        } else {
-             curr_color = opponent_color;
-        }
-    }
-
-    free_position_history(&history);
+  if (!add_position_to_history(&history, &board, WHITE)) {
     fclose(moves_file);
+    *draw = true;
+    return;
+  }
+
+  Color opponent_color, curr_color = WHITE;
+  bool end_game = false;
+  GameStatus game_status = GAME_IN_PROGRESS;
+
+  clear_screen();
+  display_board(&board);
+
+  while (!end_game) {
+    chess_turn(&board, curr_color, black_get_move, white_get_move, moves_file);
+
+    opponent_color = get_opponent_color(curr_color);
+    game_status = get_game_status(&board, opponent_color);
+
+    if (game_status == GAME_CHECKMATE) {
+      *winner = curr_color;
+      *draw = false;
+      end_game = true;
+    } else if (game_status == GAME_STALEMATE) {
+      *draw = true;
+      end_game = true;
+    }
+
+    // History management
+    else if (!add_position_to_history(&history, &board, opponent_color)) {
+      fprintf(stderr, "Unable to record the position history\n");
+      *draw = true;
+      end_game = true;
+    } else if (is_threefold_repetition(&history, &board, opponent_color)) {
+      *draw = true;
+      end_game = true;
+    } else {
+      curr_color = opponent_color;
+    }
+  }
+
+  free_position_history(&history);
+  fclose(moves_file);
 }

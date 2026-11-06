@@ -5,15 +5,15 @@
 #define MAX_MOVES 256
 
 typedef struct Move {
-    Coords src;
-    Coords dest;
-    bool is_capture;
-    PieceName promotion;
+  Coords src;
+  Coords dest;
+  bool is_capture;
+  PieceName promotion;
 } Move;
 
 typedef struct {
-    Move moves[MAX_MOVES];
-    unsigned int count;
+  Move moves[MAX_MOVES];
+  unsigned int count;
 } MoveList;
 
 Move create_move(Coords src, Coords dest);
