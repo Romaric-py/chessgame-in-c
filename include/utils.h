@@ -19,6 +19,10 @@ void clear_screen(void);
 void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos);
 bool is_valid_string_pos(char *input);
 void read_coords(char *prompt, Coords *pos);
+PieceName piece_name_from_char(char c);
+bool is_valid_piece_char(char c);
+bool is_lowercase(char c);
+bool is_digit(char c);
 
 uint64_t rand64();
 

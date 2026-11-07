@@ -189,7 +189,7 @@ int _present_pieces_score(Board *board, Color color) {
 }
 
 int _board_score(Board *board, Color color) {
-  GameStatus color_game_status = get_game_status(board, color);
+  GameStatus color_game_status = get_game_status(board, color, NULL);
   if (color_game_status == GAME_CHECKMATE) {
     return -INFINITY; // loses
   }

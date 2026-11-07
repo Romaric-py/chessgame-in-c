@@ -71,6 +71,41 @@ void read_coords(char *prompt, Coords *pos) {
   clear_stdin_buffer();
 }
 
+bool is_lowercase(char c) { return (c >= 'a' && c <= 'z'); }
+
+bool is_digit(char c) { return (c >= '0' && c <= '9'); }
+
+PieceName piece_name_from_char(char c) {
+  switch (c) {
+  case 'p':
+  case 'P':
+    return PAWN;
+  case 'r':
+  case 'R':
+    return ROOK;
+  case 'n':
+  case 'N':
+    return KNIGHT;
+  case 'b':
+  case 'B':
+    return BISHOP;
+  case 'q':
+  case 'Q':
+    return QUEEN;
+  case 'k':
+  case 'K':
+    return KING;
+  default:
+    return NONE;
+  }
+}
+
+bool is_valid_piece_char(char c) {
+  return (c == 'p' || c == 'r' || c == 'n' || c == 'b' || c == 'q' ||
+          c == 'k' || c == 'P' || c == 'R' || c == 'N' || c == 'B' ||
+          c == 'Q' || c == 'K');
+}
+
 uint64_t rand64() {
   uint64_t r1 = (uint64_t)rand();
   uint64_t r2 = (uint64_t)rand();

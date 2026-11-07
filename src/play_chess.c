@@ -106,7 +106,14 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
                 FuncGetMove white_get_move) {
   Board board;
   FILE *moves_file = fopen(MOVE_RECORD_FILE, "w");
-  PositionHistory history = create_position_history();
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {0, 0},
+      .is_timed = false,
+  };
+
+  *winner = WHITE;
+  *draw = false;
 
   if (moves_file == NULL) {
     perror(MOVE_RECORD_FILE);
@@ -116,7 +123,8 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
 
   init_board(&board);
 
-  if (!add_position_to_history(&history, &board, WHITE)) {
+  if (!add_position_to_history(&context.history, &board, WHITE)) {
+    free_position_history(&context.history);
     fclose(moves_file);
     *draw = true;
     return;
@@ -133,30 +141,32 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
     chess_turn(&board, curr_color, black_get_move, white_get_move, moves_file);
 
     opponent_color = get_opponent_color(curr_color);
-    game_status = get_game_status(&board, opponent_color);
+    game_status = get_game_status(&board, opponent_color, &context);
 
-    if (game_status == GAME_CHECKMATE) {
-      *winner = curr_color;
-      *draw = false;
-      end_game = true;
-    } else if (game_status == GAME_STALEMATE) {
-      *draw = true;
-      end_game = true;
+    *draw = (game_status == GAME_STALEMATE ||
+             game_status == GAME_DRAW_50_MOVE_RULE ||
+             game_status == GAME_DRAW_INSUFFICIENT_MATERIAL ||
+             game_status == GAME_DRAW_3FOLD_REPETITION);
+    end_game = (game_status != GAME_IN_PROGRESS && game_status != GAME_CHECK);
+
+    if (end_game) {
+      if (!*draw) {
+        *winner = curr_color;
+        *draw = false;
+      } else {
+        *draw = true;
+      }
+      break;
     }
 
-    // History management
-    else if (!add_position_to_history(&history, &board, opponent_color)) {
+    curr_color = opponent_color;
+    if (!add_position_to_history(&context.history, &board, curr_color)) {
       fprintf(stderr, "Unable to record the position history\n");
       *draw = true;
-      end_game = true;
-    } else if (is_threefold_repetition(&history, &board, opponent_color)) {
-      *draw = true;
-      end_game = true;
-    } else {
-      curr_color = opponent_color;
+      break;
     }
   }
 
-  free_position_history(&history);
+  free_position_history(&context.history);
   fclose(moves_file);
 }

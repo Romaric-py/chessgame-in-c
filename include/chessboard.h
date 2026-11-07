@@ -98,5 +98,7 @@ void undo_move(Board *board, const MoveReport *move_report);
 void compute_rook_move_for_castling(Coords king_src_pos, Coords king_dest_pos,
                                     Coords *rook_src_pos,
                                     Coords *rook_dest_pos);
+bool is_castling_state_consistent(Board *board);
+bool is_enpassant_state_consistent(Board *board);
 
 #endif

@@ -6,6 +6,7 @@ void register_legal_move_tests(void);
 void register_game_status_tests(void);
 void register_special_move_tests(void);
 void register_chessboard_move_tests(void);
+void register_fen_tests(void);
 
 int main(void) {
   CU_initialize_registry();
@@ -15,6 +16,7 @@ int main(void) {
   register_game_status_tests();
   register_special_move_tests();
   register_chessboard_move_tests();
+  register_fen_tests();
 
   CU_basic_set_mode(CU_BRM_VERBOSE);
   CU_basic_run_tests();

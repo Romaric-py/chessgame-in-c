@@ -22,6 +22,9 @@ Piece create_piece(PieceName name, Color color) {
   return (Piece){.name = name, .color = color};
 }
 bool is_none_piece(Piece piece) { return piece.name == NONE; }
+bool are_pieces_equal(Piece piece1, Piece piece2) {
+  return (piece1.name == piece2.name) && (piece1.color == piece2.color);
+}
 
 // Coords
 Coords create_coords(unsigned int row, unsigned int col) {
@@ -242,6 +245,91 @@ void undo_move(Board *board, const MoveReport *move_report) {
   set_piece(board, move_report->dest_pos,
             move_report->is_enpassant_move ? EMPTY_PIECE
                                            : move_report->captured_piece);
+}
+
+
+bool is_castling_state_consistent(Board *board) {
+  // white
+  bool king_well_placed = are_coords_equal(KING_POS(*board, WHITE), create_coords(7, 4));
+  bool rook_a_well_placed = are_pieces_equal(get_piece(board, create_coords(7, 0)), create_piece(ROOK, WHITE));
+  bool rook_h_well_placed = are_pieces_equal(get_piece(board, create_coords(7, 7)), create_piece(ROOK, WHITE));
+  
+  if (
+    (CASTLE_K(*board, WHITE) && 
+    !(king_well_placed && rook_h_well_placed))
+    ||
+    (CASTLE_Q(*board, WHITE) && 
+    !(king_well_placed && rook_a_well_placed))
+  ) {
+    return false;
+  }
+
+  // black
+  king_well_placed = are_coords_equal(KING_POS(*board, BLACK), create_coords(0, 4));
+  rook_a_well_placed = are_pieces_equal(get_piece(board, create_coords(0, 0)), create_piece(ROOK, BLACK));
+  rook_h_well_placed = are_pieces_equal(get_piece(board, create_coords(0, 7)), create_piece(ROOK, BLACK));
+  
+  if (
+    (CASTLE_K(*board, BLACK) && 
+    !(king_well_placed && rook_h_well_placed))
+    ||
+    (CASTLE_Q(*board, BLACK) && 
+    !(king_well_placed && rook_a_well_placed))
+  ) {
+    return false;
+  }
+
+  return true;
+}
+
+
+bool is_enpassant_state_consistent(Board *board) {
+  if (!ENPASSANT_ACTIVE(*board)) {
+    return true;
+  }
+
+  Coords target_pos = ENPASSANT_POS(*board);
+
+  // Check if the target square is empty
+  if (!is_empty_square(board, target_pos)) {
+    return false;
+  }
+
+  // Check if the target square is on the correct rank for en passant
+  if (target_pos.row != 2 && target_pos.row != 5) {
+    return false;
+  }
+
+  // Determine the color of the pawn that can perform the en passant capture
+  Color attacker_color = (target_pos.row == 2) ? WHITE : BLACK;
+  int row_delta = (attacker_color == BLACK) ? -1 : 1;
+
+  // Check the left square for the attacking pawn
+  if (target_pos.col > 0) {
+    Coords left_pos = create_coords(target_pos.row + row_delta, target_pos.col - 1);
+    Piece left_piece = get_piece(board, left_pos);
+    if (left_piece.name != PAWN || left_piece.color != attacker_color) {
+      return false;
+    }
+  }
+
+  // Check the right square for the attacking pawn
+  if (target_pos.col < BOARD_SIZE - 1) {
+    Coords right_pos = create_coords(target_pos.row + row_delta, target_pos.col + 1);
+    Piece right_piece = get_piece(board, right_pos);
+    if (right_piece.name != PAWN || right_piece.color != attacker_color) {
+      return false;
+    }
+  }
+
+  // Check if the attacked pawn is in the correct position (one rank behind the target square)
+  Coords attacked_pawn_pos = create_coords(target_pos.row + row_delta, target_pos.col);
+  Piece attacked_pawn = get_piece(board, attacked_pawn_pos);
+  if (attacked_pawn.name != PAWN || attacked_pawn.color == attacker_color) {
+    return false;
+  }
+
+  return true;
 }
 
 // Ensure the move is valid before calling this function

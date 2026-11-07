@@ -5,6 +5,7 @@
 #include <CUnit/Basic.h>
 
 #include "chessboard.h"
+#include "game_context.h"
 #include "game_status.h"
 #include "king_check.h"
 #include "legal_move.h"
@@ -16,12 +17,17 @@ static Board board_with_kings(void) {
   return board;
 }
 
+static void add_piece(Board *board, unsigned int row, unsigned int col,
+                      PieceName name, Color color) {
+  set_piece(board, create_coords(row, col), create_piece(name, color));
+}
+
 void test_game_in_progress(void) {
   Board board = board_with_kings();
   set_piece(&board, create_coords(6, 7), create_piece(PAWN, WHITE));
 
-  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_IN_PROGRESS);
-  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL), GAME_IN_PROGRESS);
 }
 
 void test_game_check_with_legal_escape(void) {
@@ -30,7 +36,7 @@ void test_game_check_with_legal_escape(void) {
   set_piece(&board, create_coords(0, 7), create_piece(ROOK, BLACK));
   CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
   CU_ASSERT_TRUE(has_legal_move(&board, WHITE));
-  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECK);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_CHECK);
 }
 
 void test_game_check_for_black(void) {
@@ -39,7 +45,7 @@ void test_game_check_for_black(void) {
   set_piece(&board, create_coords(7, 0), create_piece(ROOK, WHITE));
   CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
   CU_ASSERT_TRUE(has_legal_move(&board, BLACK));
-  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECK);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL), GAME_CHECK);
 }
 
 void test_checkmate(void) {
@@ -51,7 +57,7 @@ void test_checkmate(void) {
 
   CU_ASSERT_TRUE(is_king_in_check(&board, WHITE));
   CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
-  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_CHECKMATE);
 }
 
 void test_stalemate(void) {
@@ -63,7 +69,7 @@ void test_stalemate(void) {
 
   CU_ASSERT_FALSE(is_king_in_check(&board, WHITE));
   CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
-  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_STALEMATE);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_STALEMATE);
 }
 
 void test_checkmate_and_stalemate_are_turn_dependent(void) {
@@ -73,8 +79,8 @@ void test_checkmate_and_stalemate_are_turn_dependent(void) {
   set_piece(&board, create_coords(5, 5), create_piece(KING, BLACK));
   set_piece(&board, create_coords(6, 6), create_piece(QUEEN, BLACK));
 
-  CU_ASSERT_EQUAL(get_game_status(&board, WHITE), GAME_CHECKMATE);
-  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_CHECKMATE);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL), GAME_IN_PROGRESS);
 }
 
 void test_checkmate_with_captured_escape_piece(void) {
@@ -86,7 +92,153 @@ void test_checkmate_with_captured_escape_piece(void) {
 
   CU_ASSERT_TRUE(is_king_in_check(&board, BLACK));
   CU_ASSERT_FALSE(has_legal_move(&board, BLACK));
-  CU_ASSERT_EQUAL(get_game_status(&board, BLACK), GAME_CHECKMATE);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL), GAME_CHECKMATE);
+}
+
+void test_draw_by_fifty_move_rule(void) {
+  Board board = board_with_kings();
+  board.meta.halfmove_clock = 99;
+
+  CU_ASSERT_NOT_EQUAL(get_game_status(&board, WHITE, NULL),
+                      GAME_DRAW_50_MOVE_RULE);
+
+  board.meta.halfmove_clock = 100;
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_DRAW_50_MOVE_RULE);
+  CU_ASSERT_TRUE(is_end_game(&board));
+}
+
+void test_draw_by_insufficient_material_with_only_kings(void) {
+  Board board = board_with_kings();
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL),
+                  GAME_DRAW_INSUFFICIENT_MATERIAL);
+  CU_ASSERT_TRUE(is_end_game(&board));
+}
+
+void test_draw_by_insufficient_material_with_one_minor_piece(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 4, 4, BISHOP, WHITE);
+
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL),
+                  GAME_DRAW_INSUFFICIENT_MATERIAL);
+
+  board = board_with_kings();
+  add_piece(&board, 4, 4, KNIGHT, BLACK);
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL),
+                  GAME_DRAW_INSUFFICIENT_MATERIAL);
+}
+
+void test_draw_by_insufficient_material_with_same_color_bishops(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 2, 2, BISHOP, WHITE);
+  add_piece(&board, 5, 5, BISHOP, BLACK);
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL),
+                  GAME_DRAW_INSUFFICIENT_MATERIAL);
+}
+
+void test_opposite_color_bishops_are_not_insufficient_material(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 2, 2, BISHOP, WHITE);
+  add_piece(&board, 5, 4, BISHOP, BLACK);
+
+  CU_ASSERT_NOT_EQUAL(get_game_status(&board, WHITE, NULL),
+                      GAME_DRAW_INSUFFICIENT_MATERIAL);
+}
+
+void test_two_bishops_for_one_player_are_not_insufficient_material(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 2, 2, BISHOP, WHITE);
+  add_piece(&board, 4, 4, BISHOP, WHITE);
+
+  CU_ASSERT_NOT_EQUAL(get_game_status(&board, BLACK, NULL),
+                      GAME_DRAW_INSUFFICIENT_MATERIAL);
+}
+
+void test_draw_states_are_checked_before_turn_status(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 2, 2, BISHOP, WHITE);
+  board.meta.halfmove_clock = 100;
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, NULL), GAME_DRAW_50_MOVE_RULE);
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, NULL), GAME_DRAW_50_MOVE_RULE);
+}
+
+void test_timed_game_reports_timeout_for_the_player_to_move(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 6, 7, PAWN, WHITE);
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {0, 30},
+      .is_timed = true,
+  };
+
+  CU_ASSERT_EQUAL(get_game_status(&board, BLACK, &context), GAME_LOSS_TIMEOUT);
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, &context), GAME_IN_PROGRESS);
+  free_position_history(&context.history);
+}
+
+void test_untimed_game_does_not_timeout_at_zero_seconds(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 6, 7, PAWN, WHITE);
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {0, 0},
+      .is_timed = false,
+  };
+
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, &context), GAME_IN_PROGRESS);
+  free_position_history(&context.history);
+}
+
+void test_context_reports_threefold_repetition(void) {
+  Board board = board_with_kings();
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {0, 0},
+      .is_timed = false,
+  };
+
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, WHITE));
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, WHITE));
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, WHITE));
+  CU_ASSERT_EQUAL(get_game_status(&board, WHITE, &context),
+                  GAME_DRAW_3FOLD_REPETITION);
+  free_position_history(&context.history);
+}
+
+void test_context_does_not_report_repetition_before_three_occurrences(void) {
+  Board board = board_with_kings();
+  add_piece(&board, 6, 7, PAWN, WHITE);
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {30, 30},
+      .is_timed = false,
+  };
+
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, WHITE));
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, WHITE));
+  CU_ASSERT_NOT_EQUAL(get_game_status(&board, WHITE, &context),
+                      GAME_DRAW_3FOLD_REPETITION);
+  free_position_history(&context.history);
+}
+
+void test_repetition_requires_same_side_to_move(void) {
+  Board board = board_with_kings();
+  GameContext context = {
+      .history = create_position_history(),
+      .remaining_seconds = {30, 30},
+      .is_timed = false,
+  };
+
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, BLACK));
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, BLACK));
+  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, BLACK));
+  CU_ASSERT_NOT_EQUAL(get_game_status(&board, WHITE, &context),
+                      GAME_DRAW_3FOLD_REPETITION);
+  free_position_history(&context.history);
 }
 
 void register_game_status_tests(void) {
@@ -102,4 +254,32 @@ void register_game_status_tests(void) {
               test_checkmate_and_stalemate_are_turn_dependent);
   CU_add_test(suite, "test_checkmate_with_captured_escape_piece",
               test_checkmate_with_captured_escape_piece);
+  CU_add_test(suite, "test_draw_by_fifty_move_rule",
+              test_draw_by_fifty_move_rule);
+  CU_add_test(suite, "test_draw_by_insufficient_material_with_only_kings",
+              test_draw_by_insufficient_material_with_only_kings);
+  CU_add_test(suite, "test_draw_by_insufficient_material_with_one_minor_piece",
+              test_draw_by_insufficient_material_with_one_minor_piece);
+  CU_add_test(suite,
+              "test_draw_by_insufficient_material_with_same_color_bishops",
+              test_draw_by_insufficient_material_with_same_color_bishops);
+  CU_add_test(suite,
+              "test_opposite_color_bishops_are_not_insufficient_material",
+              test_opposite_color_bishops_are_not_insufficient_material);
+  CU_add_test(suite,
+              "test_two_bishops_for_one_player_are_not_insufficient_material",
+              test_two_bishops_for_one_player_are_not_insufficient_material);
+  CU_add_test(suite, "test_draw_states_are_checked_before_turn_status",
+              test_draw_states_are_checked_before_turn_status);
+  CU_add_test(suite, "test_timed_game_reports_timeout_for_the_player_to_move",
+              test_timed_game_reports_timeout_for_the_player_to_move);
+  CU_add_test(suite, "test_untimed_game_does_not_timeout_at_zero_seconds",
+              test_untimed_game_does_not_timeout_at_zero_seconds);
+  CU_add_test(suite, "test_context_reports_threefold_repetition",
+              test_context_reports_threefold_repetition);
+  CU_add_test(
+      suite, "test_context_does_not_report_repetition_before_three_occurrences",
+      test_context_does_not_report_repetition_before_three_occurrences);
+  CU_add_test(suite, "test_repetition_requires_same_side_to_move",
+              test_repetition_requires_same_side_to_move);
 }
