@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #define BOARD_SIZE 8
-#define EMPTY_PIECE ((Piece){.name = NONE, .color = BLACK})
+#define EMPTY_PIECE ((Piece){.name = NONE, .color = CHESS_BLACK})
 
 #define KING_POS(b, c) ((b).meta.colors[c].king_position)
 #define CASTLE_Q(b, c) ((b).meta.colors[c].castle_rights.queen_side)
@@ -13,10 +13,10 @@
 #define ENPASSANT_ACTIVE(b) ((b).meta.enpassant.is_active)
 #define PIECE_COUNT(b, c, p) ((b).meta.colors[c].piece_counts[p])
 
-typedef enum Color {
-  BLACK = 0,
-  WHITE,
-} Color;
+typedef enum ChessColor {
+  CHESS_BLACK = 0,
+  CHESS_WHITE,
+} ChessColor;
 
 typedef enum PieceName {
   PAWN = 0,
@@ -30,7 +30,7 @@ typedef enum PieceName {
 
 typedef struct Piece {
   PieceName name;
-  Color color;
+  ChessColor color;
 } Piece;
 
 typedef struct Coords {
@@ -47,24 +47,24 @@ typedef struct CastleRights {
   bool king_side;
 } CastleRights;
 
-typedef struct OneColorState {
+typedef struct OneChessColorState {
   CastleRights castle_rights;
   Coords king_position;
   unsigned int piece_counts[6];
-} OneColorState;
+} OneChessColorState;
 
 typedef struct BoardMetaData {
   EnPassantState enpassant;
-  OneColorState colors[2];
-  Color current_turn;
+  OneChessColorState colors[2];
+  ChessColor current_turn;
   unsigned int halfmove_clock; // for the 50-move rule
   unsigned int fullmove_number;
 } BoardMetaData;
 
-typedef struct Board {
+typedef struct ChessBoard {
   Piece squares[BOARD_SIZE][BOARD_SIZE];
   BoardMetaData meta;
-} Board;
+} ChessBoard;
 
 typedef struct {
   Coords src_pos, dest_pos;
@@ -74,11 +74,11 @@ typedef struct {
   bool is_enpassant_move;
 } MoveReport;
 
-// Color
-Color get_opponent_color(Color color);
+// ChessColor
+ChessColor get_opponent_color(ChessColor color);
 
 // Piece
-Piece create_piece(PieceName name, Color color);
+Piece create_piece(PieceName name, ChessColor color);
 bool is_none_piece(Piece piece);
 
 // Coords
@@ -86,19 +86,19 @@ Coords create_coords(unsigned int row, unsigned int col);
 bool are_coords_equal(Coords coords1, Coords coords2);
 bool is_valid_coords(int row, int col);
 
-// Board
-Board create_empty_board();
-void init_board(Board *board);
-Board clone_board(const Board *src_board);
-Piece get_piece(const Board *board, Coords pos);
-void set_piece(Board *board, Coords pos, Piece piece);
-bool is_empty_square(const Board *board, Coords pos);
-MoveReport make_move(Board *board, Coords src_pos, Coords dest_pos);
-void undo_move(Board *board, const MoveReport *move_report);
+// ChessBoard
+ChessBoard create_empty_board();
+void init_board(ChessBoard *board);
+ChessBoard clone_board(const ChessBoard *src_board);
+Piece get_piece(const ChessBoard *board, Coords pos);
+void set_piece(ChessBoard *board, Coords pos, Piece piece);
+bool is_empty_square(const ChessBoard *board, Coords pos);
+MoveReport make_move(ChessBoard *board, Coords src_pos, Coords dest_pos);
+void undo_move(ChessBoard *board, const MoveReport *move_report);
 void compute_rook_move_for_castling(Coords king_src_pos, Coords king_dest_pos,
                                     Coords *rook_src_pos,
                                     Coords *rook_dest_pos);
-bool is_castling_state_consistent(Board *board);
-bool is_enpassant_state_consistent(Board *board);
+bool is_castling_state_consistent(ChessBoard *board);
+bool is_enpassant_state_consistent(ChessBoard *board);
 
 #endif

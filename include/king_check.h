@@ -4,9 +4,9 @@
 #include "chessboard.h"
 #include <stdbool.h>
 
-bool is_square_attacked(const Board *board, Coords pos);
-bool is_square_attacked_by(const Board *board, Coords pos,
-                           Color attacker_color);
-bool is_king_in_check(const Board *board, Color color);
+bool is_square_attacked(const ChessBoard *board, Coords pos);
+bool is_square_attacked_by(const ChessBoard *board, Coords pos,
+                           ChessColor attacker_color);
+bool is_king_in_check(const ChessBoard *board, ChessColor color);
 
 #endif

@@ -1,10 +1,13 @@
 #include <assert.h>
+#include <ctype.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "utils.h"
+
+static const char piece_symbols[] = "pbnrqk";
 
 int sign(int x) {
   if (x == 0)
@@ -46,6 +49,9 @@ void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos) {
   fprintf(moves_file, "%s ", coords_to_string(src_pos));
   fprintf(moves_file, "%s\n", coords_to_string(dest_pos));
   fflush(moves_file);
+  //! DEBUG
+  printf("Move written to file: %s %s\n", coords_to_string(src_pos),
+         coords_to_string(dest_pos));
 }
 
 // check if a position string is valid
@@ -98,6 +104,16 @@ PieceName piece_name_from_char(char c) {
   default:
     return NONE;
   }
+}
+
+char piece_to_fen(Piece piece) {
+  char symbol = piece_symbols[piece.name];
+  return piece.color == CHESS_WHITE ? (char)toupper(symbol) : symbol;
+}
+
+Piece fen_to_piece(char c) {
+  return create_piece(piece_name_from_char(c),
+                      is_lowercase(c) ? CHESS_BLACK : CHESS_WHITE);
 }
 
 bool is_valid_piece_char(char c) {

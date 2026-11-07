@@ -17,8 +17,8 @@ typedef enum GameStatus {
 } GameStatus;
 
 // The argument `color` indicates the color that it is the turn
-GameStatus get_game_status(Board *board, Color color,
+GameStatus get_game_status(ChessBoard *board, ChessColor color,
                            const GameContext *context);
-bool is_end_game(Board *board);
+bool is_end_game(ChessBoard *board);
 
 #endif

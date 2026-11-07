@@ -4,9 +4,9 @@
 #include "special_move.h"
 #include "utils.h"
 
-static void add_pawn_move(MoveList *movelist, Move move, Color color,
+static void add_pawn_move(MoveList *movelist, Move move, ChessColor color,
                           bool stop_at_first) {
-  bool promotes = move.dest.row == ((color == WHITE) ? 0 : BOARD_SIZE - 1);
+  bool promotes = move.dest.row == ((color == CHESS_WHITE) ? 0 : BOARD_SIZE - 1);
 
   if (!promotes) {
     add_move(movelist, move);
@@ -24,25 +24,25 @@ static void add_pawn_move(MoveList *movelist, Move move, Color color,
   }
 }
 
-bool piece_has_legal_move(Board *board, Coords pos) {
+bool piece_has_legal_move(ChessBoard *board, Coords pos) {
   Piece piece = get_piece(board, pos);
   MoveList moves =
       generate_legal_moves_for_piece(board, piece.color, pos, true);
   return moves.count > 0;
 }
 
-bool has_legal_move(Board *board, Color color) {
+bool has_legal_move(ChessBoard *board, ChessColor color) {
   MoveList moves;
   generate_legal_moves(board, color, true, &moves);
   return moves.count > 0;
 }
 
-bool is_legal_move(Board *board, Coords src_pos, Coords dest_pos) {
+bool is_legal_move(ChessBoard *board, Coords src_pos, Coords dest_pos) {
   if (!is_valid_move(board, src_pos, dest_pos)) {
     return false;
   }
   // Here, the move is valid (and the src_pos square is not empty)
-  Color color = get_piece(board, src_pos).color;
+  ChessColor color = get_piece(board, src_pos).color;
   MoveReport report = make_move(board, src_pos, dest_pos);
   bool leaves_king_in_check = is_king_in_check(board, color);
   undo_move(board, &report);
@@ -54,7 +54,7 @@ bool is_legal_move(Board *board, Coords src_pos, Coords dest_pos) {
 The parameter stop_at_first is useful in case that we just want to ensure that
 at least one legal move exists for a piece.
 */
-MoveList generate_legal_moves_for_piece(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_piece(ChessBoard *board, ChessColor color, Coords pos,
                                         bool stop_at_first) {
   Piece piece = get_piece(board, pos);
 
@@ -84,7 +84,7 @@ MoveList generate_legal_moves_for_piece(Board *board, Color color, Coords pos,
   }
 }
 
-MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_pawn(ChessBoard *board, ChessColor color, Coords pos,
                                        bool stop_at_first) {
   Coords dest_pos;
   Move move;
@@ -92,7 +92,7 @@ MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos,
   MoveList movelist;
   create_movelist(&movelist);
 
-  int delta_row = (color == BLACK) ? 1 : -1;
+  int delta_row = (color == CHESS_BLACK) ? 1 : -1;
   int next_row = pos.row + delta_row;
 
   for (int col = (int)pos.col - 1; col <= (int)pos.col + 1; col++) {
@@ -129,7 +129,7 @@ MoveList generate_legal_moves_for_pawn(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_for_knight(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_knight(ChessBoard *board, ChessColor color, Coords pos,
                                          bool stop_at_first) {
   Coords dest_pos;
   Move move;
@@ -162,7 +162,7 @@ MoveList generate_legal_moves_for_knight(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_for_king(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_king(ChessBoard *board, ChessColor color, Coords pos,
                                        bool stop_at_first) {
   Coords dest_pos;
   Move move;
@@ -197,7 +197,7 @@ MoveList generate_legal_moves_for_king(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_for_bishop(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_bishop(ChessBoard *board, ChessColor color, Coords pos,
                                          bool stop_at_first) {
   // assumes pos contains a bishop
   MoveList tmp;
@@ -217,7 +217,7 @@ MoveList generate_legal_moves_for_bishop(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_for_rook(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_rook(ChessBoard *board, ChessColor color, Coords pos,
                                        bool stop_at_first) {
   // assumes pos contains a rook
   MoveList tmp;
@@ -237,7 +237,7 @@ MoveList generate_legal_moves_for_rook(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_for_queen(Board *board, Color color, Coords pos,
+MoveList generate_legal_moves_for_queen(ChessBoard *board, ChessColor color, Coords pos,
                                         bool stop_at_first) {
   // assumes pos contains a queen
   MoveList tmp;
@@ -254,7 +254,7 @@ MoveList generate_legal_moves_for_queen(Board *board, Color color, Coords pos,
   return movelist;
 }
 
-MoveList generate_legal_moves_in_direction(Board *board, Color color,
+MoveList generate_legal_moves_in_direction(ChessBoard *board, ChessColor color,
                                            Coords pos, int delta_row,
                                            int delta_col, bool stop_at_first) {
   Coords dest_pos;
@@ -287,7 +287,7 @@ MoveList generate_legal_moves_in_direction(Board *board, Color color,
   return movelist;
 }
 
-void generate_legal_moves(Board *board, Color color, bool stop_at_first,
+void generate_legal_moves(ChessBoard *board, ChessColor color, bool stop_at_first,
                           MoveList *movelist) {
   unsigned int row, col;
   Coords pos;

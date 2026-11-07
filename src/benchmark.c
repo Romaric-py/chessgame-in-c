@@ -7,8 +7,8 @@
 
 int main(void) {
   const unsigned int move_count = 10;
-  Board board;
-  Color color = WHITE;
+  ChessBoard board;
+  ChessColor color = CHESS_WHITE;
   double min_time = 0.0;
   double max_time = 0.0;
   double total_time = 0.0;

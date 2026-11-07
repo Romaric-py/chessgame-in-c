@@ -8,8 +8,8 @@ PositionHistory create_position_history() {
   return history;
 }
 
-PositionHistoryEntry create_position_history_entry(const Board *board,
-                                                   Color color_to_move) {
+PositionHistoryEntry create_position_history_entry(const ChessBoard *board,
+                                                   ChessColor color_to_move) {
   PositionHistoryEntry entry = {.board = clone_board(board),
                                 .color_to_move = color_to_move};
   return entry;
@@ -22,8 +22,8 @@ void free_position_history(PositionHistory *history) {
   history->capacity = 0;
 }
 
-bool same_position(const PositionHistoryEntry *entry, const Board *board,
-                   Color color_to_move) {
+bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
+                   ChessColor color_to_move) {
   if (entry->color_to_move != color_to_move) {
     return false;
   }
@@ -41,8 +41,8 @@ bool same_position(const PositionHistoryEntry *entry, const Board *board,
   return true;
 }
 
-bool add_position_to_history(PositionHistory *history, const Board *board,
-                             Color color_to_move) {
+bool add_position_to_history(PositionHistory *history, const ChessBoard *board,
+                             ChessColor color_to_move) {
   if (history->count == history->capacity) {
     size_t new_capacity =
         (history->capacity == 0) ? 128 : history->capacity * 2;
@@ -61,8 +61,8 @@ bool add_position_to_history(PositionHistory *history, const Board *board,
   return true;
 }
 
-bool is_threefold_repetition(const PositionHistory *history, const Board *board,
-                             Color color_to_move) {
+bool is_threefold_repetition(const PositionHistory *history, const ChessBoard *board,
+                             ChessColor color_to_move) {
   unsigned int occurrences = 0;
   for (size_t i = 0; i < history->count; i++) {
     if (same_position(&history->entries[i], board, color_to_move)) {

@@ -12,7 +12,7 @@
 #include "special_move.h"
 #include "utils.h"
 
-void get_human_move(Board *board, Color color, Move *move) {
+void get_human_move(ChessBoard *board, ChessColor color, Move *move) {
   do {
     do {
       read_coords("From", &move->src);
@@ -64,25 +64,25 @@ void choose_piece_name(char *prompt, PieceName *name) {
   }
 }
 
-void get_ai_move(Board *board, Color color, Move *move) {
+void get_ai_move(ChessBoard *board, ChessColor color, Move *move) {
   // minmax_ab_parallel(board, color, color, move, DEPTH);
   minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
 }
 
-void make_pawn_promotion(Board *board, Color color, Coords pos,
+void make_pawn_promotion(ChessBoard *board, ChessColor color, Coords pos,
                          PieceName promotion) {
   // Promotion
   Piece piece = create_piece(promotion, color);
   set_piece(board, pos, piece);
 }
 
-void chess_turn(Board *board, Color color, FuncGetMove black_get_move,
+void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
                 FuncGetMove white_get_move, FILE *moves_file) {
-  printf("%s's turn\n", (color == BLACK) ? "Black" : "White");
+  printf("%s's turn\n", (color == CHESS_BLACK) ? "Black" : "White");
   Move move_to_play;
   bool can_promote;
 
-  FuncGetMove get_move = (color == BLACK) ? black_get_move : white_get_move;
+  FuncGetMove get_move = (color == CHESS_BLACK) ? black_get_move : white_get_move;
   get_move(board, color, &move_to_play);
 
   write_move(moves_file, move_to_play.src, move_to_play.dest);
@@ -102,9 +102,11 @@ void chess_turn(Board *board, Color color, FuncGetMove black_get_move,
   display_board(board);
 }
 
-void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
+
+
+void play_chess(ChessColor *winner, bool *draw, FuncGetMove black_get_move,
                 FuncGetMove white_get_move) {
-  Board board;
+  ChessBoard board;
   FILE *moves_file = fopen(MOVE_RECORD_FILE, "w");
   GameContext context = {
       .history = create_position_history(),
@@ -112,7 +114,7 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
       .is_timed = false,
   };
 
-  *winner = WHITE;
+  *winner = CHESS_WHITE;
   *draw = false;
 
   if (moves_file == NULL) {
@@ -123,14 +125,14 @@ void play_chess(Color *winner, bool *draw, FuncGetMove black_get_move,
 
   init_board(&board);
 
-  if (!add_position_to_history(&context.history, &board, WHITE)) {
+  if (!add_position_to_history(&context.history, &board, CHESS_WHITE)) {
     free_position_history(&context.history);
     fclose(moves_file);
     *draw = true;
     return;
   }
 
-  Color opponent_color, curr_color = WHITE;
+  ChessColor opponent_color, curr_color = CHESS_WHITE;
   bool end_game = false;
   GameStatus game_status = GAME_IN_PROGRESS;
 

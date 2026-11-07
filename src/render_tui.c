@@ -38,14 +38,14 @@ const char *repr_piece(Piece piece) {
     break;
   }
 
-  char color_char = (piece.color == WHITE) ? 'W' : 'B';
+  char color_char = (piece.color == CHESS_WHITE) ? 'W' : 'B';
 
   sprintf(buffer, "%c%c", piece_char, color_char);
 
   return buffer;
 }
 
-void display_board(Board *board) {
+void display_board(ChessBoard *board) {
 
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
     printf(" %d ", BOARD_SIZE - row);
@@ -67,7 +67,7 @@ void display_board(Board *board) {
   printf("\n\n");
 }
 
-void display_board_with_hint(Board *board, Coords src_pos) {
+void display_board_with_hint(ChessBoard *board, Coords src_pos) {
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
     printf(" %d ", BOARD_SIZE - row);
     for (unsigned int col = 0; col < BOARD_SIZE; col++) {

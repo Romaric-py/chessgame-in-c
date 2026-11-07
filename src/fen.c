@@ -1,6 +1,5 @@
 #include "fen.h"
 
-#include <ctype.h>
 #include <limits.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,40 +8,42 @@
 
 #define FEN_BUFFER_SIZE 128
 
-static const char piece_symbols[] = "pbnrqk";
-
-static bool parse_fen(const char *fen_str, Board *board);
+static bool parse_fen(const char *fen_str, ChessBoard *board);
 static bool parse_uint(const char **cursor, unsigned int *value);
-static bool parse_board(const char **cursor, Board *board);
-static bool parse_castling(const char **cursor, Board *board);
-static bool parse_en_passant(const char **cursor, Board *board);
-static bool parse_turn(const char **cursor, Board *board);
+static bool parse_board(const char **cursor, ChessBoard *board);
+static bool parse_castling(const char **cursor, ChessBoard *board);
+static bool parse_en_passant(const char **cursor, ChessBoard *board);
+static bool parse_turn(const char **cursor, ChessBoard *board);
 
-static void dump_board(const Board *board, char *fen_str, size_t *offset);
-static void dump_turn(const Board *board, char *fen_str, size_t *offset);
+static void dump_board(const ChessBoard *board, char *fen_str, size_t *offset);
+static void dump_turn(const ChessBoard *board, char *fen_str, size_t *offset);
 static void add_space(char *fen_str, size_t *offset);
 static void dump_uint(unsigned int value, char *fen_str, size_t *offset);
-static void dump_castling(const Board *board, char *fen_str, size_t *offset);
-static void dump_en_passant(const Board *board, char *fen_str, size_t *offset);
-static char piece_to_fen(Piece piece);
+static void dump_castling(const ChessBoard *board, char *fen_str, size_t *offset);
+static void dump_en_passant(const ChessBoard *board, char *fen_str, size_t *offset);
 
 bool is_valid_fen_string(const char *fen_str) {
   if (fen_str == NULL) {
     return false;
   }
   // We will try a parse, if it falls, that means the fen_string is invalid
-  Board board;
+  ChessBoard board;
   return fen_loads(&board, fen_str);
 }
 
-bool fen_loads(Board *board, const char *fen_str) {
+bool fen_loads(ChessBoard *board, const char *fen_str) {
   if (board == NULL || fen_str == NULL) {
     return false;
   }
-  return parse_fen(fen_str, board);
+  ChessBoard parsed_board = create_empty_board();
+  if (!parse_fen(fen_str, &parsed_board)) {
+    return false;
+  }
+  *board = parsed_board;
+  return true;
 }
 
-bool fen_dumps(const Board *board, char *fen_str) {
+bool fen_dumps(const ChessBoard *board, char *fen_str) {
   if (board == NULL || fen_str == NULL) {
     return false;
   }
@@ -68,7 +69,7 @@ bool fen_dumps(const Board *board, char *fen_str) {
   return true;
 }
 
-bool fen_load(Board *board, FILE *fen_file) {
+bool fen_load(ChessBoard *board, FILE *fen_file) {
   if (board == NULL || fen_file == NULL) {
     return false;
   }
@@ -89,7 +90,7 @@ bool fen_load(Board *board, FILE *fen_file) {
   return fen_loads(board, fen_str);
 }
 
-bool fen_dump(const Board *board, FILE *fen_file) {
+bool fen_dump(const ChessBoard *board, FILE *fen_file) {
   char fen_str[FEN_BUFFER_SIZE];
 
   if (board == NULL || fen_file == NULL || !fen_dumps(board, fen_str)) {
@@ -99,8 +100,8 @@ bool fen_dump(const Board *board, FILE *fen_file) {
 }
 
 // @mine::start
-static void dump_turn(const Board *board, char *fen_str, size_t *offset) {
-  fen_str[(*offset)++] = (board->meta.current_turn == WHITE) ? 'w' : 'b';
+static void dump_turn(const ChessBoard *board, char *fen_str, size_t *offset) {
+  fen_str[(*offset)++] = (board->meta.current_turn == CHESS_WHITE) ? 'w' : 'b';
   fen_str[(*offset)] = '\0';
 }
 
@@ -121,21 +122,18 @@ static void dump_uint(unsigned int value, char *fen_str, size_t *offset) {
   fen_str[(*offset)] = '\0';
 }
 
-static bool parse_turn(const char **cursor, Board *board) {
+static bool parse_turn(const char **cursor, ChessBoard *board) {
   if (**cursor != 'w' && **cursor != 'b') {
     return false;
   }
-  board->meta.current_turn = (**cursor == 'w') ? WHITE : BLACK;
+  board->meta.current_turn = (**cursor == 'w') ? CHESS_WHITE : CHESS_BLACK;
   (*cursor)++;
   return **cursor == ' ';
 }
 
-static Piece fen_to_piece(const char c) {
-  return create_piece(piece_name_from_char(c), is_lowercase(c) ? BLACK : WHITE);
-}
 // @mine::end
 
-static bool parse_fen(const char *fen_str, Board *board) {
+static bool parse_fen(const char *fen_str, ChessBoard *board) {
   const char *cursor = fen_str;
 
   if (!parse_board(&cursor, board)) {
@@ -176,7 +174,7 @@ static bool parse_fen(const char *fen_str, Board *board) {
   return board->meta.fullmove_number > 0 && *cursor == '\0';
 }
 
-static void dump_board(const Board *board, char *fen_str, size_t *offset) {
+static void dump_board(const ChessBoard *board, char *fen_str, size_t *offset) {
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
     unsigned int col = 0;
     while (col < BOARD_SIZE) {
@@ -207,19 +205,19 @@ static void dump_board(const Board *board, char *fen_str, size_t *offset) {
   fen_str[(*offset)] = '\0';
 }
 
-static void dump_castling(const Board *board, char *fen_str, size_t *offset) {
+static void dump_castling(const ChessBoard *board, char *fen_str, size_t *offset) {
   size_t start = *offset;
 
-  if (CASTLE_K(*board, WHITE)) {
+  if (CASTLE_K(*board, CHESS_WHITE)) {
     fen_str[(*offset)++] = 'K';
   }
-  if (CASTLE_Q(*board, WHITE)) {
+  if (CASTLE_Q(*board, CHESS_WHITE)) {
     fen_str[(*offset)++] = 'Q';
   }
-  if (CASTLE_K(*board, BLACK)) {
+  if (CASTLE_K(*board, CHESS_BLACK)) {
     fen_str[(*offset)++] = 'k';
   }
-  if (CASTLE_Q(*board, BLACK)) {
+  if (CASTLE_Q(*board, CHESS_BLACK)) {
     fen_str[(*offset)++] = 'q';
   }
   if (*offset == start) {
@@ -228,7 +226,7 @@ static void dump_castling(const Board *board, char *fen_str, size_t *offset) {
   fen_str[(*offset)] = '\0';
 }
 
-static void dump_en_passant(const Board *board, char *fen_str, size_t *offset) {
+static void dump_en_passant(const ChessBoard *board, char *fen_str, size_t *offset) {
   if (!ENPASSANT_ACTIVE(*board)) {
     fen_str[(*offset)++] = '-';
   } else {
@@ -236,11 +234,6 @@ static void dump_en_passant(const Board *board, char *fen_str, size_t *offset) {
     fen_str[(*offset)++] = ('8' - ENPASSANT_POS(*board).row);
   }
   fen_str[(*offset)] = '\0';
-}
-
-static char piece_to_fen(Piece piece) {
-  char symbol = piece_symbols[piece.name];
-  return piece.color == WHITE ? (char)toupper(symbol) : symbol;
 }
 
 static bool parse_uint(const char **cursor, unsigned int *value) {
@@ -253,7 +246,7 @@ static bool parse_uint(const char **cursor, unsigned int *value) {
   return *cursor > cursor_start;
 }
 
-static bool parse_board(const char **cursor, Board *board) {
+static bool parse_board(const char **cursor, ChessBoard *board) {
   unsigned int row = 0;
   while (row < BOARD_SIZE) {
     unsigned int col = 0;
@@ -287,11 +280,11 @@ static bool parse_board(const char **cursor, Board *board) {
   return **cursor == ' ';
 }
 
-static bool parse_castling(const char **cursor, Board *board) {
-  CASTLE_K(*board, WHITE) = false;
-  CASTLE_Q(*board, WHITE) = false;
-  CASTLE_K(*board, BLACK) = false;
-  CASTLE_Q(*board, BLACK) = false;
+static bool parse_castling(const char **cursor, ChessBoard *board) {
+  CASTLE_K(*board, CHESS_WHITE) = false;
+  CASTLE_Q(*board, CHESS_WHITE) = false;
+  CASTLE_K(*board, CHESS_BLACK) = false;
+  CASTLE_Q(*board, CHESS_BLACK) = false;
 
   if (**cursor == '-') {
     (*cursor)++;
@@ -299,26 +292,26 @@ static bool parse_castling(const char **cursor, Board *board) {
   }
 
   if (**cursor == 'K') {
-    CASTLE_K(*board, WHITE) = true;
+    CASTLE_K(*board, CHESS_WHITE) = true;
     (*cursor)++;
   }
   if (**cursor == 'Q') {
-    CASTLE_Q(*board, WHITE) = true;
+    CASTLE_Q(*board, CHESS_WHITE) = true;
     (*cursor)++;
   }
   if (**cursor == 'k') {
-    CASTLE_K(*board, BLACK) = true;
+    CASTLE_K(*board, CHESS_BLACK) = true;
     (*cursor)++;
   }
   if (**cursor == 'q') {
-    CASTLE_Q(*board, BLACK) = true;
+    CASTLE_Q(*board, CHESS_BLACK) = true;
     (*cursor)++;
   }
 
   return **cursor == ' ';
 }
 
-static bool parse_en_passant(const char **cursor, Board *board) {
+static bool parse_en_passant(const char **cursor, ChessBoard *board) {
   if (**cursor == '-') {
     (*cursor)++;
     ENPASSANT_ACTIVE(*board) = false;

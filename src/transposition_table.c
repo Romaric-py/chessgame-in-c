@@ -53,12 +53,12 @@ uint64_t get_position_enpassant_hash(Coords pos) {
   return position_enpassant_hashes[pos.row][pos.col];
 }
 
-uint64_t get_roque_hash(Color color, bool side) {
+uint64_t get_roque_hash(ChessColor color, bool side) {
   return roque_hashes[color][side];
 }
 
 static void _update_roque_hash(uint64_t *hash, const BoardMetaData *meta,
-                               Color color) {
+                               ChessColor color) {
   if (meta->colors[color].castle_rights.queen_side) {
     *hash ^= get_roque_hash(color, 0);
   }
@@ -67,7 +67,7 @@ static void _update_roque_hash(uint64_t *hash, const BoardMetaData *meta,
   }
 }
 
-uint64_t hash_board_state(Board *board) {
+uint64_t hash_board_state(ChessBoard *board) {
   Coords pos;
   uint64_t hash = 0ULL;
 
@@ -82,13 +82,13 @@ uint64_t hash_board_state(Board *board) {
   }
 
   // Player turn
-  if (board->meta.current_turn == WHITE) {
+  if (board->meta.current_turn == CHESS_WHITE) {
     hash ^= white_turn_hash;
   }
 
   // Castling rights
-  _update_roque_hash(&hash, &board->meta, BLACK);
-  _update_roque_hash(&hash, &board->meta, WHITE);
+  _update_roque_hash(&hash, &board->meta, CHESS_BLACK);
+  _update_roque_hash(&hash, &board->meta, CHESS_WHITE);
 
   // En passant
   if (ENPASSANT_ACTIVE(*board)) {
@@ -100,7 +100,7 @@ uint64_t hash_board_state(Board *board) {
 
 //! When move_report will include the color who played the move, we can use it
 //! to update the hash without needing the board state
-void increment_hash_board_state(uint64_t *hash, Board *board,
+void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
                                 const MoveReport *move_report) {
 
   // Remove the piece from src_pos

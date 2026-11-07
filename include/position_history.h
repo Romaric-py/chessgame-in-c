@@ -7,8 +7,8 @@
 #include "chessboard.h"
 
 typedef struct {
-  Board board;
-  Color color_to_move;
+  ChessBoard board;
+  ChessColor color_to_move;
 } PositionHistoryEntry;
 
 typedef struct {
@@ -19,18 +19,18 @@ typedef struct {
 
 PositionHistory create_position_history();
 
-PositionHistoryEntry create_position_history_entry(const Board *board,
-                                                   Color color_to_move);
+PositionHistoryEntry create_position_history_entry(const ChessBoard *board,
+                                                   ChessColor color_to_move);
 
 void free_position_history(PositionHistory *history);
 
-bool same_position(const PositionHistoryEntry *entry, const Board *board,
-                   Color color_to_move);
+bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
+                   ChessColor color_to_move);
 
-bool add_position_to_history(PositionHistory *history, const Board *board,
-                             Color color_to_move);
+bool add_position_to_history(PositionHistory *history, const ChessBoard *board,
+                             ChessColor color_to_move);
 
-bool is_threefold_repetition(const PositionHistory *history, const Board *board,
-                             Color color_to_move);
+bool is_threefold_repetition(const PositionHistory *history, const ChessBoard *board,
+                             ChessColor color_to_move);
 
 #endif

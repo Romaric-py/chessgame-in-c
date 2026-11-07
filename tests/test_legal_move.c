@@ -7,113 +7,113 @@
 #include "chessboard.h"
 #include "legal_move.h"
 
-static Board board_with_kings(void) {
-  Board board = create_empty_board();
-  set_piece(&board, create_coords(7, 4), create_piece(KING, WHITE));
-  set_piece(&board, create_coords(0, 0), create_piece(KING, BLACK));
+static ChessBoard board_with_kings(void) {
+  ChessBoard board = create_empty_board();
+  set_piece(&board, create_coords(7, 4), create_piece(KING, CHESS_WHITE));
+  set_piece(&board, create_coords(0, 0), create_piece(KING, CHESS_BLACK));
   return board;
 }
 
 void test_has_legal_move_for_both_colors(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
 
-  set_piece(&board, create_coords(6, 7), create_piece(PAWN, WHITE));
-  set_piece(&board, create_coords(1, 0), create_piece(PAWN, BLACK));
+  set_piece(&board, create_coords(6, 7), create_piece(PAWN, CHESS_WHITE));
+  set_piece(&board, create_coords(1, 0), create_piece(PAWN, CHESS_BLACK));
 
-  CU_ASSERT_TRUE(has_legal_move(&board, WHITE));
-  CU_ASSERT_TRUE(has_legal_move(&board, BLACK));
+  CU_ASSERT_TRUE(has_legal_move(&board, CHESS_WHITE));
+  CU_ASSERT_TRUE(has_legal_move(&board, CHESS_BLACK));
 }
 
 void test_no_legal_move_on_board_without_pieces(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
 
-  CU_ASSERT_FALSE(has_legal_move(&board, WHITE));
-  CU_ASSERT_FALSE(has_legal_move(&board, BLACK));
+  CU_ASSERT_FALSE(has_legal_move(&board, CHESS_WHITE));
+  CU_ASSERT_FALSE(has_legal_move(&board, CHESS_BLACK));
 }
 
 void test_legal_move_accepts_safe_geometric_move(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 0);
   Coords destination = create_coords(5, 0);
 
-  set_piece(&board, source, create_piece(PAWN, WHITE));
+  set_piece(&board, source, create_piece(PAWN, CHESS_WHITE));
   CU_ASSERT_TRUE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_rejects_invalid_geometric_move(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 0);
   Coords destination = create_coords(4, 1);
 
-  set_piece(&board, source, create_piece(PAWN, WHITE));
+  set_piece(&board, source, create_piece(PAWN, CHESS_WHITE));
   CU_ASSERT_FALSE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_rejects_move_from_empty_square(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
 
   CU_ASSERT_FALSE(
       is_legal_move(&board, create_coords(6, 0), create_coords(5, 0)));
 }
 
 void test_legal_move_rejects_pinned_piece_move(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 3);
   Coords destination = create_coords(5, 4);
 
-  set_piece(&board, source, create_piece(BISHOP, WHITE));
-  set_piece(&board, create_coords(4, 1), create_piece(BISHOP, BLACK));
+  set_piece(&board, source, create_piece(BISHOP, CHESS_WHITE));
+  set_piece(&board, create_coords(4, 1), create_piece(BISHOP, CHESS_BLACK));
 
   CU_ASSERT_FALSE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_accepts_pinned_piece_move_that_keeps_blocking(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 3);
   Coords destination = create_coords(5, 2);
 
-  set_piece(&board, source, create_piece(BISHOP, WHITE));
-  set_piece(&board, create_coords(4, 1), create_piece(BISHOP, BLACK));
+  set_piece(&board, source, create_piece(BISHOP, CHESS_WHITE));
+  set_piece(&board, create_coords(4, 1), create_piece(BISHOP, CHESS_BLACK));
 
   CU_ASSERT_TRUE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_rejects_move_leaving_king_in_check(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 4);
   Coords destination = create_coords(6, 3);
 
-  set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
-  set_piece(&board, source, create_piece(ROOK, WHITE));
+  set_piece(&board, create_coords(0, 4), create_piece(ROOK, CHESS_BLACK));
+  set_piece(&board, source, create_piece(ROOK, CHESS_WHITE));
 
   CU_ASSERT_FALSE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_rejects_king_move_into_attack(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(7, 4);
   Coords destination = create_coords(6, 4);
 
-  set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
+  set_piece(&board, create_coords(0, 4), create_piece(ROOK, CHESS_BLACK));
   CU_ASSERT_FALSE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_accepts_king_move_to_safe_square(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(7, 4);
   Coords destination = create_coords(7, 3);
 
-  set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
+  set_piece(&board, create_coords(0, 4), create_piece(ROOK, CHESS_BLACK));
   CU_ASSERT_TRUE(is_legal_move(&board, source, destination));
 }
 
 void test_legal_move_accepts_move_that_blocks_check(void) {
-  Board board = board_with_kings();
+  ChessBoard board = board_with_kings();
   Coords source = create_coords(6, 3);
   Coords destination = create_coords(6, 4);
 
-  set_piece(&board, create_coords(0, 4), create_piece(ROOK, BLACK));
-  set_piece(&board, source, create_piece(ROOK, WHITE));
+  set_piece(&board, create_coords(0, 4), create_piece(ROOK, CHESS_BLACK));
+  set_piece(&board, source, create_piece(ROOK, CHESS_WHITE));
 
   CU_ASSERT_TRUE(is_legal_move(&board, source, destination));
 }

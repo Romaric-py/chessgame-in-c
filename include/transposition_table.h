@@ -31,11 +31,11 @@ extern TTEntry transposition_table[TT_SIZE];
 
 void init_zobrist_hashes();
 uint64_t get_position_piece_hash(Coords pos, Piece piece);
-uint64_t hash_board_state(Board *board);
+uint64_t hash_board_state(ChessBoard *board);
 
 //! When move_report will include the color who played the move, we can use it
 //! to update the hash without needing the board state
-void increment_hash_board_state(uint64_t *hash, Board *board,
+void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
                                 const MoveReport *move_report);
 
 void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,

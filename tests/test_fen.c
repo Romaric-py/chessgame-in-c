@@ -8,8 +8,8 @@
 static const char *initial_fen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/"
                                  "RNBQKBNR w KQkq - 0 1";
 
-static void assert_board_has_initial_position(const Board *board) {
-  Board expected;
+static void assert_board_has_initial_position(const ChessBoard *board) {
+  ChessBoard expected;
   init_board(&expected);
 
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
@@ -24,63 +24,63 @@ static void assert_board_has_initial_position(const Board *board) {
   CU_ASSERT_EQUAL(board->meta.current_turn, expected.meta.current_turn);
   CU_ASSERT_EQUAL(board->meta.halfmove_clock, expected.meta.halfmove_clock);
   CU_ASSERT_EQUAL(board->meta.fullmove_number, expected.meta.fullmove_number);
-  CU_ASSERT_TRUE(CASTLE_K(*board, WHITE));
-  CU_ASSERT_TRUE(CASTLE_Q(*board, WHITE));
-  CU_ASSERT_TRUE(CASTLE_K(*board, BLACK));
-  CU_ASSERT_TRUE(CASTLE_Q(*board, BLACK));
+  CU_ASSERT_TRUE(CASTLE_K(*board, CHESS_WHITE));
+  CU_ASSERT_TRUE(CASTLE_Q(*board, CHESS_WHITE));
+  CU_ASSERT_TRUE(CASTLE_K(*board, CHESS_BLACK));
+  CU_ASSERT_TRUE(CASTLE_Q(*board, CHESS_BLACK));
   CU_ASSERT_FALSE(ENPASSANT_ACTIVE(*board));
 }
 
 void test_fen_loads_initial_position(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
 
   CU_ASSERT_TRUE(fen_loads(&board, initial_fen));
   assert_board_has_initial_position(&board);
 }
 
 void test_fen_loads_position_metadata(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
   const char *fen = "r3k3/8/8/8/8/8/8/4K3 b - - 37 42";
 
   CU_ASSERT_TRUE(fen_loads(&board, fen));
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(0, 4)).name, KING);
-  CU_ASSERT_EQUAL(get_piece(&board, create_coords(0, 4)).color, BLACK);
-  CU_ASSERT_EQUAL(board.meta.current_turn, BLACK);
-  CU_ASSERT_FALSE(CASTLE_K(board, WHITE));
-  CU_ASSERT_FALSE(CASTLE_Q(board, WHITE));
-  CU_ASSERT_FALSE(CASTLE_K(board, BLACK));
-  CU_ASSERT_FALSE(CASTLE_Q(board, BLACK));
+  CU_ASSERT_EQUAL(get_piece(&board, create_coords(0, 4)).color, CHESS_BLACK);
+  CU_ASSERT_EQUAL(board.meta.current_turn, CHESS_BLACK);
+  CU_ASSERT_FALSE(CASTLE_K(board, CHESS_WHITE));
+  CU_ASSERT_FALSE(CASTLE_Q(board, CHESS_WHITE));
+  CU_ASSERT_FALSE(CASTLE_K(board, CHESS_BLACK));
+  CU_ASSERT_FALSE(CASTLE_Q(board, CHESS_BLACK));
   CU_ASSERT_FALSE(ENPASSANT_ACTIVE(board));
   CU_ASSERT_EQUAL(board.meta.halfmove_clock, 37);
   CU_ASSERT_EQUAL(board.meta.fullmove_number, 42);
 }
 
 void test_fen_loads_coherent_castling_rights(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
   const char *fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
   CU_ASSERT_TRUE(fen_loads(&board, fen));
-  CU_ASSERT_TRUE(CASTLE_K(board, WHITE));
-  CU_ASSERT_TRUE(CASTLE_Q(board, WHITE));
-  CU_ASSERT_TRUE(CASTLE_K(board, BLACK));
-  CU_ASSERT_TRUE(CASTLE_Q(board, BLACK));
+  CU_ASSERT_TRUE(CASTLE_K(board, CHESS_WHITE));
+  CU_ASSERT_TRUE(CASTLE_Q(board, CHESS_WHITE));
+  CU_ASSERT_TRUE(CASTLE_K(board, CHESS_BLACK));
+  CU_ASSERT_TRUE(CASTLE_Q(board, CHESS_BLACK));
 }
 
 void test_fen_loads_coherent_en_passant_state(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
   const char *fen = "r3k2r/8/8/8/1pPp4/8/8/R3K2R b KQkq c3 0 1";
 
   CU_ASSERT_TRUE(fen_loads(&board, fen));
   CU_ASSERT_TRUE(ENPASSANT_ACTIVE(board));
   CU_ASSERT_TRUE(are_coords_equal(ENPASSANT_POS(board), create_coords(5, 2)));
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 1)).name, PAWN);
-  CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 1)).color, BLACK);
+  CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 1)).color, CHESS_BLACK);
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 2)).name, PAWN);
-  CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 2)).color, WHITE);
+  CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 2)).color, CHESS_WHITE);
 }
 
 void test_fen_loads_rejects_invalid_fen(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
 
   CU_ASSERT_FALSE(fen_loads(&board, "8/8/8/8/8/8/8/K6 w - - 0 1"));
   CU_ASSERT_FALSE(fen_loads(&board, "8/8/8/8/8/8/8/K6k x - - 0 1"));
@@ -93,7 +93,7 @@ void test_fen_loads_rejects_invalid_fen(void) {
 }
 
 void test_fen_rejects_inconsistent_castling_rights(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
 
   CU_ASSERT_FALSE(fen_loads(&board, "r3k3/8/8/8/8/8/8/R3K2R w KQkq - 0 1"));
 
@@ -101,7 +101,7 @@ void test_fen_rejects_inconsistent_castling_rights(void) {
 }
 
 void test_fen_rejects_inconsistent_en_passant_state(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
 
   CU_ASSERT_FALSE(fen_loads(&board, "4k3/8/8/8/8/8/8/4K3 w - e3 0 1"));
 
@@ -109,7 +109,7 @@ void test_fen_rejects_inconsistent_en_passant_state(void) {
 }
 
 void test_fen_dumps_initial_position(void) {
-  Board board;
+  ChessBoard board;
   char fen[128] = {0};
 
   init_board(&board);
@@ -118,22 +118,22 @@ void test_fen_dumps_initial_position(void) {
 }
 
 void test_fen_dumps_and_loads_round_trip(void) {
-  Board original = create_empty_board();
-  Board loaded = create_empty_board();
+  ChessBoard original = create_empty_board();
+  ChessBoard loaded = create_empty_board();
   char fen[128] = {0};
 
-  set_piece(&original, create_coords(0, 4), create_piece(KING, BLACK));
-  set_piece(&original, create_coords(0, 0), create_piece(ROOK, BLACK));
-  set_piece(&original, create_coords(7, 4), create_piece(KING, WHITE));
-  set_piece(&original, create_coords(3, 3), create_piece(QUEEN, BLACK));
-  set_piece(&original, create_coords(4, 2), create_piece(PAWN, WHITE));
-  set_piece(&original, create_coords(4, 1), create_piece(PAWN, BLACK));
-  set_piece(&original, create_coords(4, 3), create_piece(PAWN, BLACK));
-  original.meta.current_turn = BLACK;
-  CASTLE_K(original, WHITE) = false;
-  CASTLE_Q(original, WHITE) = false;
-  CASTLE_K(original, BLACK) = false;
-  CASTLE_Q(original, BLACK) = true;
+  set_piece(&original, create_coords(0, 4), create_piece(KING, CHESS_BLACK));
+  set_piece(&original, create_coords(0, 0), create_piece(ROOK, CHESS_BLACK));
+  set_piece(&original, create_coords(7, 4), create_piece(KING, CHESS_WHITE));
+  set_piece(&original, create_coords(3, 3), create_piece(QUEEN, CHESS_BLACK));
+  set_piece(&original, create_coords(4, 2), create_piece(PAWN, CHESS_WHITE));
+  set_piece(&original, create_coords(4, 1), create_piece(PAWN, CHESS_BLACK));
+  set_piece(&original, create_coords(4, 3), create_piece(PAWN, CHESS_BLACK));
+  original.meta.current_turn = CHESS_BLACK;
+  CASTLE_K(original, CHESS_WHITE) = false;
+  CASTLE_Q(original, CHESS_WHITE) = false;
+  CASTLE_K(original, CHESS_BLACK) = false;
+  CASTLE_Q(original, CHESS_BLACK) = true;
   ENPASSANT_ACTIVE(original) = true;
   ENPASSANT_POS(original) = create_coords(5, 2);
   original.meta.halfmove_clock = 123;
@@ -151,7 +151,7 @@ void test_fen_dumps_and_loads_round_trip(void) {
 }
 
 void test_fen_file_io(void) {
-  Board board = create_empty_board();
+  ChessBoard board = create_empty_board();
   FILE *file = tmpfile();
 
   CU_ASSERT_PTR_NOT_NULL_FATAL(file);

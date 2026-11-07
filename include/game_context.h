@@ -7,7 +7,7 @@
 
 typedef struct GameContext {
   PositionHistory history;
-  unsigned int remaining_seconds[2]; // BLACK & WHITE
+  unsigned int remaining_seconds[2]; // CHESS_BLACK & CHESS_WHITE
   bool is_timed;
 } GameContext;
 

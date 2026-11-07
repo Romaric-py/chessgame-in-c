@@ -6,8 +6,8 @@
 #include "legal_move.h"
 #include "move_check.h"
 
-bool is_square_attacked_by(const Board *board, Coords pos,
-                           Color attacker_color) {
+bool is_square_attacked_by(const ChessBoard *board, Coords pos,
+                           ChessColor attacker_color) {
   unsigned int row, col;
 
   for (row = 0; row < BOARD_SIZE; row++) {
@@ -20,7 +20,7 @@ bool is_square_attacked_by(const Board *board, Coords pos,
       }
 
       if (attacker.name == PAWN) {
-        int delta_row = (attacker.color == WHITE) ? -1 : 1;
+        int delta_row = (attacker.color == CHESS_WHITE) ? -1 : 1;
         int row_diff = (int)pos.row - (int)src_pos.row;
         int col_diff = (int)pos.col - (int)src_pos.col;
 
@@ -45,19 +45,19 @@ bool is_square_attacked_by(const Board *board, Coords pos,
   return false;
 }
 
-bool is_square_attacked(const Board *board, Coords pos) {
+bool is_square_attacked(const ChessBoard *board, Coords pos) {
   if (!is_empty_square(board, pos)) {
     return is_square_attacked_by(
         board, pos, get_opponent_color(get_piece(board, pos).color));
   }
 
-  return is_square_attacked_by(board, pos, BLACK) ||
-         is_square_attacked_by(board, pos, WHITE);
+  return is_square_attacked_by(board, pos, CHESS_BLACK) ||
+         is_square_attacked_by(board, pos, CHESS_WHITE);
 }
 
 // WARNING: This function assumes that the color's king position field is
 // initialized correctly in the board structure. If the king's position is not
 // set, this can lead to undefined behavior.
-bool is_king_in_check(const Board *board, Color color) {
+bool is_king_in_check(const ChessBoard *board, ChessColor color) {
   return is_square_attacked(board, KING_POS(*board, color));
 }
