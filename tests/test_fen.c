@@ -57,8 +57,7 @@ void test_fen_loads_position_metadata(void) {
 
 void test_fen_loads_coherent_castling_rights(void) {
   Board board = create_empty_board();
-  const char *fen =
-      "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
+  const char *fen = "r3k2r/8/8/8/8/8/8/R3K2R w KQkq - 0 1";
 
   CU_ASSERT_TRUE(fen_loads(&board, fen));
   CU_ASSERT_TRUE(CASTLE_K(board, WHITE));
@@ -69,13 +68,11 @@ void test_fen_loads_coherent_castling_rights(void) {
 
 void test_fen_loads_coherent_en_passant_state(void) {
   Board board = create_empty_board();
-  const char *fen =
-      "r3k2r/8/8/8/1pPp4/8/8/R3K2R b KQkq c3 0 1";
+  const char *fen = "r3k2r/8/8/8/1pPp4/8/8/R3K2R b KQkq c3 0 1";
 
   CU_ASSERT_TRUE(fen_loads(&board, fen));
   CU_ASSERT_TRUE(ENPASSANT_ACTIVE(board));
-  CU_ASSERT_TRUE(
-      are_coords_equal(ENPASSANT_POS(board), create_coords(5, 2)));
+  CU_ASSERT_TRUE(are_coords_equal(ENPASSANT_POS(board), create_coords(5, 2)));
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 1)).name, PAWN);
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 1)).color, BLACK);
   CU_ASSERT_EQUAL(get_piece(&board, create_coords(4, 2)).name, PAWN);
@@ -98,25 +95,17 @@ void test_fen_loads_rejects_invalid_fen(void) {
 void test_fen_rejects_inconsistent_castling_rights(void) {
   Board board = create_empty_board();
 
-  CU_ASSERT_FALSE(fen_loads(
-      &board,
-      "r3k3/8/8/8/8/8/8/R3K2R w KQkq - 0 1"));
+  CU_ASSERT_FALSE(fen_loads(&board, "r3k3/8/8/8/8/8/8/R3K2R w KQkq - 0 1"));
 
-  CU_ASSERT_FALSE(fen_loads(
-      &board,
-      "r3k2r/8/8/8/8/8/8/R3K3 w KQkq - 0 1"));
+  CU_ASSERT_FALSE(fen_loads(&board, "r3k2r/8/8/8/8/8/8/R3K3 w KQkq - 0 1"));
 }
 
 void test_fen_rejects_inconsistent_en_passant_state(void) {
   Board board = create_empty_board();
 
-  CU_ASSERT_FALSE(fen_loads(
-      &board,
-      "4k3/8/8/8/8/8/8/4K3 w - e3 0 1"));
+  CU_ASSERT_FALSE(fen_loads(&board, "4k3/8/8/8/8/8/8/4K3 w - e3 0 1"));
 
-  CU_ASSERT_FALSE(fen_loads(
-      &board,
-      "4k3/8/8/8/8/8/8/4K3 w - e4 0 1"));
+  CU_ASSERT_FALSE(fen_loads(&board, "4k3/8/8/8/8/8/8/4K3 w - e4 0 1"));
 }
 
 void test_fen_dumps_initial_position(void) {
