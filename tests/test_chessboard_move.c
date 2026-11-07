@@ -2,6 +2,7 @@
 
 #include "chessboard.h"
 #include "special_move.h"
+#include "transposition_table.h"
 
 static void assert_boards_equal(const ChessBoard *expected, const ChessBoard *actual) {
   unsigned int row, col;
@@ -32,6 +33,7 @@ static void assert_boards_equal(const ChessBoard *expected, const ChessBoard *ac
                       PIECE_COUNT(*actual, color, piece_name));
     }
   }
+  CU_ASSERT_EQUAL(actual->meta.hash, hash_board_state(actual));
 }
 
 void test_move_and_undo_quiet_move(void) {
@@ -68,6 +70,7 @@ void test_move_and_undo_capture(void) {
   report = make_move(&board, source, destination);
 
   CU_ASSERT_EQUAL(report.captured_piece.name, KNIGHT);
+  CU_ASSERT_EQUAL(board.meta.hash, hash_board_state(&board));
   undo_move(&board, &report);
   assert_boards_equal(&before, &board);
 }
@@ -78,8 +81,6 @@ void test_move_and_undo_pawn_double_step_restores_en_passant_state(void) {
   Coords destination = create_coords(4, 3);
   MoveReport report;
 
-  ENPASSANT_ACTIVE(board) = true;
-  ENPASSANT_POS(board) = create_coords(3, 5);
   set_piece(&board, source, create_piece(PAWN, CHESS_WHITE));
   ChessBoard before = clone_board(&board);
 
@@ -100,9 +101,10 @@ void test_move_and_undo_en_passant(void) {
   MoveReport report;
 
   set_piece(&board, source, create_piece(PAWN, CHESS_WHITE));
-  set_piece(&board, attacked, create_piece(PAWN, CHESS_BLACK));
-  ENPASSANT_ACTIVE(board) = true;
-  ENPASSANT_POS(board) = destination;
+  set_piece(&board, create_coords(1, 4), create_piece(PAWN, CHESS_BLACK));
+  make_move(&board, create_coords(1, 4), attacked);
+  CU_ASSERT_TRUE(ENPASSANT_ACTIVE(board));
+  CU_ASSERT_TRUE(are_coords_equal(ENPASSANT_POS(board), destination));
   ChessBoard before = clone_board(&board);
 
   report = make_move(&board, source, destination);

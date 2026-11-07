@@ -30,8 +30,9 @@ bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
 
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
     for (unsigned int col = 0; col < BOARD_SIZE; col++) {
-      Piece entry_piece = entry->board.squares[row][col];
-      Piece board_piece = board->squares[row][col];
+      Coords pos = create_coords(row, col);
+      Piece entry_piece = get_piece(&entry->board, pos);
+      Piece board_piece = get_piece(board, pos);
       if (entry_piece.name != board_piece.name ||
           entry_piece.color != board_piece.color) {
         return false;

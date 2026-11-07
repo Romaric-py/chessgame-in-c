@@ -5,12 +5,21 @@
 #include "chessboard.h"
 #include "move_check.h"
 #include "special_move.h"
+#include "transposition_table.h"
 
+static void _init_meta(ChessBoard *board);
+static void _init_piece_counts(ChessBoard *board);
+static void _count_pieces(ChessBoard *board);
 static void _update_roque_flags(ChessBoard *board, Coords src_pos);
 static void _update_king_position(ChessBoard *board, Coords src_pos,
                                   Coords dest_pos);
 static void _update_move_counters(ChessBoard *board, Piece moved_piece,
                                   Piece captured_piece);
+static void _update_board_hash(ChessBoard *board, Piece piece, Coords pos);
+static void _update_metadata_hash(uint64_t *hash,
+                                  const BoardMetaData *old_meta,
+                                  const BoardMetaData *new_meta);
+
 
 // ChessColor
 ChessColor get_opponent_color(ChessColor color) {
@@ -21,7 +30,11 @@ ChessColor get_opponent_color(ChessColor color) {
 Piece create_piece(PieceName name, ChessColor color) {
   return (Piece){.name = name, .color = color};
 }
-bool is_none_piece(Piece piece) { return piece.name == NONE; }
+
+bool is_none_piece(Piece piece) {
+  return piece.name == NONE;
+}
+
 bool are_pieces_equal(Piece piece1, Piece piece2) {
   return (piece1.name == piece2.name) && (piece1.color == piece2.color);
 }
@@ -41,38 +54,6 @@ bool are_coords_equal(Coords coords1, Coords coords2) {
 }
 
 // ChessBoard
-static void _init_flags(ChessBoard *board) {
-  CASTLE_Q(*board, CHESS_WHITE) = true;
-  CASTLE_K(*board, CHESS_WHITE) = true;
-  CASTLE_Q(*board, CHESS_BLACK) = true;
-  CASTLE_K(*board, CHESS_BLACK) = true;
-
-  board->meta.enpassant.is_active = false;
-  board->meta.current_turn = CHESS_WHITE;
-  board->meta.halfmove_clock = 0;
-  board->meta.fullmove_number = 1;
-}
-
-static void _init_piece_counts(ChessBoard *board) {
-  for (int color = 0; color < 2; color++) {
-    for (int piece_name = 0; piece_name < 6; piece_name++) {
-      board->meta.colors[color].piece_counts[piece_name] = 0;
-    }
-  }
-}
-
-static void _count_pieces(ChessBoard *board) {
-  _init_piece_counts(board);
-  for (unsigned int row = 0; row < BOARD_SIZE; row++) {
-    for (unsigned int col = 0; col < BOARD_SIZE; col++) {
-      Piece piece = get_piece(board, create_coords(row, col));
-      if (!is_none_piece(piece)) {
-        PIECE_COUNT(*board, piece.color, piece.name)++;
-      }
-    }
-  }
-}
-
 ChessBoard create_empty_board() {
   ChessBoard board;
   unsigned int row, col;
@@ -82,8 +63,9 @@ ChessBoard create_empty_board() {
       board.squares[row][col] = EMPTY_PIECE;
     }
   }
-  _init_flags(&board);
-  _init_piece_counts(&board);
+
+  _init_meta(&board);
+
   return board;
 }
 
@@ -137,8 +119,8 @@ void init_board(ChessBoard *board) {
     KING_POS(*board, color) = create_coords(row, 4);
   }
 
-  _init_flags(board);
-  _count_pieces(board);
+  _init_meta(board);
+  sync_board_meta_data(board);
 }
 
 Piece get_piece(const ChessBoard *board, Coords pos) {
@@ -148,7 +130,13 @@ Piece get_piece(const ChessBoard *board, Coords pos) {
 void set_piece(ChessBoard *board, Coords pos, Piece piece) {
   if (!is_empty_square(board, pos)) {
     Piece p = get_piece(board, pos);
+    _update_board_hash(board, p, pos);
     PIECE_COUNT(*board, p.color, p.name)--;
+    if (p.name == KING &&
+        are_coords_equal(KING_POS(*board, p.color), pos)) {
+      KING_POS(*board, p.color) =
+          (Coords){.row = BOARD_SIZE, .col = BOARD_SIZE};
+    }
   }
 
   board->squares[pos.row][pos.col] = piece;
@@ -156,8 +144,10 @@ void set_piece(ChessBoard *board, Coords pos, Piece piece) {
   if (piece.name == KING) {
     KING_POS(*board, piece.color) = pos;
   }
+
   if (!is_none_piece(piece)) {
     PIECE_COUNT(*board, piece.color, piece.name)++;
+    _update_board_hash(board, piece, pos);
   }
 }
 
@@ -212,7 +202,7 @@ MoveReport make_move(ChessBoard *board, Coords src_pos, Coords dest_pos) {
     board->meta.enpassant.is_active = true;
     board->meta.enpassant.target_pos =
         create_coords((src_pos.row + dest_pos.row) / 2, dest_pos.col);
-  } else {
+  } else if (board->meta.enpassant.is_active) {
     board->meta.enpassant.is_active = false;
   }
 
@@ -224,6 +214,7 @@ MoveReport make_move(ChessBoard *board, Coords src_pos, Coords dest_pos) {
   set_piece(board, dest_pos, get_piece(board, src_pos));
   set_piece(board, src_pos, EMPTY_PIECE);
   switch_turn(board);
+  _update_metadata_hash(&board->meta.hash, &report.old_meta, &board->meta);
   return report;
 }
 
@@ -252,7 +243,7 @@ void undo_move(ChessBoard *board, const MoveReport *move_report) {
   // If we restore the board state first, since set_piece will update the piece counts, we will have a wrong piece count. So we restore the board state after restoring the pieces.
 }
 
-bool is_castling_state_consistent(ChessBoard *board) {
+bool is_castling_state_consistent(const ChessBoard *board) {
   // white
   bool king_well_placed =
       are_coords_equal(KING_POS(*board, CHESS_WHITE), create_coords(7, 4));
@@ -282,7 +273,7 @@ bool is_castling_state_consistent(ChessBoard *board) {
   return true;
 }
 
-bool is_enpassant_state_consistent(ChessBoard *board) {
+bool is_enpassant_state_consistent(const ChessBoard *board) {
   if (!ENPASSANT_ACTIVE(*board)) {
     return true;
   }
@@ -335,6 +326,79 @@ bool is_enpassant_state_consistent(ChessBoard *board) {
   return true;
 }
 
+void sync_board_meta_data(ChessBoard *board) {
+  _count_pieces(board);
+  board->meta.hash = hash_board_state(board);
+}
+
+
+
+// Static helper functions
+
+// Initialize the piece_counts array in BoardMetaData to zero for both colors and all piece types.
+static void _init_piece_counts(ChessBoard *board) {
+  for (int color = 0; color < 2; color++) {
+    for (int piece_name = 0; piece_name < 6; piece_name++) {
+      board->meta.colors[color].piece_counts[piece_name] = 0;
+    }
+  }
+}
+
+// Initialize the board metadata to the default starting values
+static void _init_meta(ChessBoard *board) {
+  CASTLE_Q(*board, CHESS_WHITE) = true;
+  CASTLE_K(*board, CHESS_WHITE) = true;
+  CASTLE_Q(*board, CHESS_BLACK) = true;
+  CASTLE_K(*board, CHESS_BLACK) = true;
+
+  board->meta.enpassant.is_active = false;
+  board->meta.current_turn = CHESS_WHITE;
+  board->meta.halfmove_clock = 0;
+  board->meta.fullmove_number = 1;
+  board->meta.hash = hash_board_state(board);
+
+  _init_piece_counts(board);
+}
+
+// Iterate over the board and count the pieces for each color and type, updating the piece_counts array in BoardMetaData.
+static void _count_pieces(ChessBoard *board) {
+  _init_piece_counts(board);
+  for (unsigned int row = 0; row < BOARD_SIZE; row++) {
+    for (unsigned int col = 0; col < BOARD_SIZE; col++) {
+      Piece piece = get_piece(board, create_coords(row, col));
+      if (!is_none_piece(piece)) {
+        PIECE_COUNT(*board, piece.color, piece.name)++;
+      }
+    }
+  }
+}
+
+//! The following function should be moved to the module in charge of Zobrist hashing.
+// Update the Zobrist hash of the board state by XORing the hash value for the given piece at the specified position.
+static void _update_board_hash(ChessBoard *board, Piece piece, Coords pos) {
+  board->meta.hash ^= get_position_piece_hash(pos, piece);
+}
+
+static void _update_metadata_hash(uint64_t *hash,
+                                  const BoardMetaData *old_meta,
+                                  const BoardMetaData *new_meta) {
+  if (old_meta->current_turn != new_meta->current_turn) {
+    *hash ^= white_turn_hash;
+  }
+
+  for (unsigned int color = 0; color < 2; color++) {
+    update_castling_hash(hash, old_meta, color);
+    update_castling_hash(hash, new_meta, color);
+  }
+
+  if (old_meta->enpassant.is_active) {
+    *hash ^= get_position_enpassant_hash(old_meta->enpassant.target_pos);
+  }
+  if (new_meta->enpassant.is_active) {
+    *hash ^= get_position_enpassant_hash(new_meta->enpassant.target_pos);
+  }
+}
+
 // Ensure the move is valid before calling this function
 static void _update_roque_flags(ChessBoard *board, Coords src_pos) {
   Piece piece = get_piece(board, src_pos);
@@ -362,6 +426,7 @@ static void _update_king_position(ChessBoard *board, Coords src_pos,
   KING_POS(*board, piece.color) = dest_pos;
 }
 
+// Update the halfmove clock and fullmove number based on the moved piece and captured piece. If a pawn is moved or a piece is captured, reset the halfmove clock to 0. Otherwise, increment the halfmove clock. Increment the fullmove number after Black's move.
 static void _update_move_counters(ChessBoard *board, Piece moved_piece,
                                   Piece captured_piece) {
   // Update the halfmove clock

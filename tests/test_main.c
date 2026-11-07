@@ -1,4 +1,5 @@
 #include <CUnit/Basic.h>
+#include "transposition_table.h"
 
 void register_move_check_tests(void);
 void register_king_check_tests(void);
@@ -10,6 +11,7 @@ void register_fen_tests(void);
 
 int main(void) {
   CU_initialize_registry();
+  init_zobrist_hashes();
   register_move_check_tests();
   register_king_check_tests();
   register_legal_move_tests();

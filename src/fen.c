@@ -1,6 +1,5 @@
 #include "fen.h"
 
-#include <limits.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -39,6 +38,7 @@ bool fen_loads(ChessBoard *board, const char *fen_str) {
   if (!parse_fen(fen_str, &parsed_board)) {
     return false;
   }
+  sync_board_meta_data(&parsed_board);
   *board = parsed_board;
   return true;
 }
@@ -65,7 +65,6 @@ bool fen_dumps(const ChessBoard *board, char *fen_str) {
 
   dump_uint(board->meta.fullmove_number, fen_str, &offset);
 
-  printf("%s\n", fen_str);
   return true;
 }
 

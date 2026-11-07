@@ -7,13 +7,20 @@
 
 //! Improve and complete this module later
 
+bool initialized_zobrist_hashes = false;
 uint64_t position_piece_hashes[8][8][2][6]; // col/row/color/name
 uint64_t position_enpassant_hashes[8][8];   // col/row
-uint64_t roque_hashes[2][2]; // color/side (0: king side, 1: queen side)
+uint64_t castling_hashes[2][2]; // color/side (0: king side, 1: queen side)
 uint64_t white_turn_hash;
 TTEntry transposition_table[TT_SIZE];
 
 void init_zobrist_hashes() {
+  // prevent re-initialization if already initialized, because that can lead to inconsistence hashes
+  if (initialized_zobrist_hashes) {
+    return;
+  }
+  initialized_zobrist_hashes = true;
+
   srand(time(NULL));
 
   // Initialize the Zobrist hashes for each piece at each position
@@ -40,7 +47,7 @@ void init_zobrist_hashes() {
   // Castling rights
   for (unsigned int color = 0; color < 2; color++) {
     for (unsigned int side = 0; side < 2; side++) {
-      roque_hashes[color][side] = (uint64_t)rand64();
+      castling_hashes[color][side] = (uint64_t)rand64();
     }
   }
 }
@@ -53,21 +60,21 @@ uint64_t get_position_enpassant_hash(Coords pos) {
   return position_enpassant_hashes[pos.row][pos.col];
 }
 
-uint64_t get_roque_hash(ChessColor color, bool side) {
-  return roque_hashes[color][side];
+uint64_t get_castling_hash(ChessColor color, bool side) {
+  return castling_hashes[color][side];
 }
 
-static void _update_roque_hash(uint64_t *hash, const BoardMetaData *meta,
+void update_castling_hash(uint64_t *hash, const BoardMetaData *meta,
                                ChessColor color) {
   if (meta->colors[color].castle_rights.queen_side) {
-    *hash ^= get_roque_hash(color, 0);
+    *hash ^= get_castling_hash(color, 0);
   }
   if (meta->colors[color].castle_rights.king_side) {
-    *hash ^= get_roque_hash(color, 1);
+    *hash ^= get_castling_hash(color, 1);
   }
 }
 
-uint64_t hash_board_state(ChessBoard *board) {
+uint64_t hash_board_state(const ChessBoard *board) {
   Coords pos;
   uint64_t hash = 0ULL;
 
@@ -87,8 +94,8 @@ uint64_t hash_board_state(ChessBoard *board) {
   }
 
   // Castling rights
-  _update_roque_hash(&hash, &board->meta, CHESS_BLACK);
-  _update_roque_hash(&hash, &board->meta, CHESS_WHITE);
+  update_castling_hash(&hash, &board->meta, CHESS_BLACK);
+  update_castling_hash(&hash, &board->meta, CHESS_WHITE);
 
   // En passant
   if (ENPASSANT_ACTIVE(*board)) {
@@ -103,36 +110,35 @@ uint64_t hash_board_state(ChessBoard *board) {
 void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
                                 const MoveReport *move_report) {
 
-  // Remove the piece from src_pos
-  *hash ^=
-      get_position_piece_hash(move_report->src_pos, move_report->moved_piece);
+  // Remove the moved piece from its source square.
+  *hash ^= get_position_piece_hash(move_report->src_pos,
+                                   move_report->moved_piece);
 
-  // Add the piece to dest_pos
-  *hash ^=
-      get_position_piece_hash(move_report->dest_pos, move_report->moved_piece);
-
-  // If a piece was captured, remove it from the hash
+  // Remove the captured piece from the destination square.
   if (!is_none_piece(move_report->captured_piece)) {
     *hash ^= get_position_piece_hash(move_report->dest_pos,
                                      move_report->captured_piece);
   }
 
-  // Special cases: en passant and roque moves
+  // Add the piece currently occupying the destination square. This also
+  // handles promotion.
+  *hash ^= get_position_piece_hash(move_report->dest_pos,
+                                   get_piece(board, move_report->dest_pos));
+
+  // Special cases: en passant and castling moves.
   if (move_report->is_enpassant_move) {
-    // Remove the captured pawn from the hash
-    *hash ^= get_position_piece_hash(move_report->old_meta.enpassant.target_pos,
+    Coords captured_pawn_pos =
+        create_coords(move_report->src_pos.row, move_report->dest_pos.col);
+    *hash ^= get_position_piece_hash(captured_pawn_pos,
                                      move_report->captured_piece);
   } else if (move_report->is_castling_move) {
     Coords rook_src_pos, rook_dest_pos;
     compute_rook_move_for_castling(move_report->src_pos, move_report->dest_pos,
                                    &rook_src_pos, &rook_dest_pos);
 
-    // Remove / Add pieces for the rook's move; the king's move is already
-    // handled above
-    *hash ^=
-        get_position_piece_hash(rook_src_pos, get_piece(board, rook_src_pos));
-    *hash ^=
-        get_position_piece_hash(rook_dest_pos, get_piece(board, rook_dest_pos));
+    Piece rook = get_piece(board, rook_dest_pos);
+    *hash ^= get_position_piece_hash(rook_src_pos, rook);
+    *hash ^= get_position_piece_hash(rook_dest_pos, rook);
   }
 
   // Update the player turn hash
@@ -152,9 +158,10 @@ void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
   // Update the castling rights hash
   // Only the color of the player who made the move can have its castling rights
   // changed
-  _update_roque_hash(hash, &move_report->old_meta,
-                     move_report->moved_piece.color);
-  _update_roque_hash(hash, &board->meta, move_report->moved_piece.color);
+  update_castling_hash(hash, &move_report->old_meta,
+                       move_report->moved_piece.color);
+  update_castling_hash(hash, &board->meta, move_report->moved_piece.color);
+  board->meta.hash = *hash;
 }
 
 void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,

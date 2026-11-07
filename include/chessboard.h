@@ -2,6 +2,7 @@
 #define CHESSBOARD_H
 
 #include <stdbool.h>
+#include <stdint.h>
 
 #define BOARD_SIZE 8
 #define EMPTY_PIECE ((Piece){.name = NONE, .color = CHESS_BLACK})
@@ -59,6 +60,7 @@ typedef struct BoardMetaData {
   ChessColor current_turn;
   unsigned int halfmove_clock; // for the 50-move rule
   unsigned int fullmove_number;
+  uint64_t hash; // Zobrist hash of the board state
 } BoardMetaData;
 
 typedef struct ChessBoard {
@@ -98,7 +100,8 @@ void undo_move(ChessBoard *board, const MoveReport *move_report);
 void compute_rook_move_for_castling(Coords king_src_pos, Coords king_dest_pos,
                                     Coords *rook_src_pos,
                                     Coords *rook_dest_pos);
-bool is_castling_state_consistent(ChessBoard *board);
-bool is_enpassant_state_consistent(ChessBoard *board);
+bool is_castling_state_consistent(const ChessBoard *board);
+bool is_enpassant_state_consistent(const ChessBoard *board);
+void sync_board_meta_data(ChessBoard *board);
 
 #endif

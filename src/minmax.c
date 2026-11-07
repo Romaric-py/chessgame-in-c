@@ -7,7 +7,6 @@
 #include "utils.h"
 #include <stdint.h>
 
-// uint64_t board_hash = 0ULL; // Global variable to store the current board hash
 
 static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
   MoveReport report = make_move(board, move_to_apply.src, move_to_apply.dest);
@@ -166,8 +165,9 @@ int evaluate_move_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_co
   if (depth <= 0 || is_end_game(board)) {
     /* increment_hash_board_state(&board_hash, board,
                                &report); // revert the hash back */
+    int score = evaluate_board(board, color_max);
     undo_move(board, &report);
-    return evaluate_board(board, color_max);
+    return score;
   }
 
   ChessColor opponent_color = get_opponent_color(curr_color);
