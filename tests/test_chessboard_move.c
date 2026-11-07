@@ -4,7 +4,8 @@
 #include "special_move.h"
 #include "transposition_table.h"
 
-static void assert_boards_equal(const ChessBoard *expected, const ChessBoard *actual) {
+static void assert_boards_equal(const ChessBoard *expected,
+                                const ChessBoard *actual) {
   unsigned int row, col;
 
   for (row = 0; row < BOARD_SIZE; row++) {
@@ -19,14 +20,18 @@ static void assert_boards_equal(const ChessBoard *expected, const ChessBoard *ac
   CU_ASSERT_EQUAL(ENPASSANT_ACTIVE(*expected), ENPASSANT_ACTIVE(*actual));
   CU_ASSERT_TRUE(
       are_coords_equal(ENPASSANT_POS(*expected), ENPASSANT_POS(*actual)));
-  CU_ASSERT_EQUAL(CASTLE_Q(*expected, CHESS_BLACK), CASTLE_Q(*actual, CHESS_BLACK));
-  CU_ASSERT_EQUAL(CASTLE_K(*expected, CHESS_BLACK), CASTLE_K(*actual, CHESS_BLACK));
-  CU_ASSERT_EQUAL(CASTLE_Q(*expected, CHESS_WHITE), CASTLE_Q(*actual, CHESS_WHITE));
-  CU_ASSERT_EQUAL(CASTLE_K(*expected, CHESS_WHITE), CASTLE_K(*actual, CHESS_WHITE));
-  CU_ASSERT_TRUE(
-      are_coords_equal(KING_POS(*expected, CHESS_BLACK), KING_POS(*actual, CHESS_BLACK)));
-  CU_ASSERT_TRUE(
-      are_coords_equal(KING_POS(*expected, CHESS_WHITE), KING_POS(*actual, CHESS_WHITE)));
+  CU_ASSERT_EQUAL(CASTLE_Q(*expected, CHESS_BLACK),
+                  CASTLE_Q(*actual, CHESS_BLACK));
+  CU_ASSERT_EQUAL(CASTLE_K(*expected, CHESS_BLACK),
+                  CASTLE_K(*actual, CHESS_BLACK));
+  CU_ASSERT_EQUAL(CASTLE_Q(*expected, CHESS_WHITE),
+                  CASTLE_Q(*actual, CHESS_WHITE));
+  CU_ASSERT_EQUAL(CASTLE_K(*expected, CHESS_WHITE),
+                  CASTLE_K(*actual, CHESS_WHITE));
+  CU_ASSERT_TRUE(are_coords_equal(KING_POS(*expected, CHESS_BLACK),
+                                  KING_POS(*actual, CHESS_BLACK)));
+  CU_ASSERT_TRUE(are_coords_equal(KING_POS(*expected, CHESS_WHITE),
+                                  KING_POS(*actual, CHESS_WHITE)));
   for (unsigned int color = 0; color < 2; color++) {
     for (unsigned int piece_name = 0; piece_name < 6; piece_name++) {
       CU_ASSERT_EQUAL(PIECE_COUNT(*expected, color, piece_name),

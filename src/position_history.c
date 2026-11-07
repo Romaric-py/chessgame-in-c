@@ -62,7 +62,8 @@ bool add_position_to_history(PositionHistory *history, const ChessBoard *board,
   return true;
 }
 
-bool is_threefold_repetition(const PositionHistory *history, const ChessBoard *board,
+bool is_threefold_repetition(const PositionHistory *history,
+                             const ChessBoard *board,
                              ChessColor color_to_move) {
   unsigned int occurrences = 0;
   for (size_t i = 0; i < history->count; i++) {

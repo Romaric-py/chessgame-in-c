@@ -3,44 +3,70 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "play_chess.h"
+#include "minmax.h"
+#include "fen.h"
+#include "transposition_table.h"
 
-int main(void) {
-  const unsigned int move_count = 10;
+#define MOVE_COUNT 10
+
+
+static void benchmark_minmax(void) {
   ChessBoard board;
   ChessColor color = CHESS_WHITE;
   double min_time = 0.0;
   double max_time = 0.0;
   double total_time = 0.0;
+  char fen_strs[MOVE_COUNT][128] = {
+      "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+      "rnbqkbnr/pppp1ppp/4p3/8/4P3/5N2/PPPP1PPP/RNBQKB1R b KQkq - 1 2",
+      "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPP1PPP/RNBQKB1R w KQkq - 2 3",
+      "rnbqkb1r/pppp1ppp/5n2/4p3/4P3/5N2/PPPPBPPP/RNBQK2R b KQkq - 3 4",
+      "rnbqkb1r/p1pp1ppp/5n2/1p2p3/4P3/5N2/PBPPBPPP/RN1QK2R w KQkq - 0 5",
+      "rnbqkb1r/p1pp1ppp/5n2/1p2p3/P3P3/5N2/BbPPBPPP/RN1QK2R b KQkq - 0 6",
+      "rnbqkb1r/p1pp1ppp/5n2/Pp2p3/P3P3/B4N2/bbPPBPPP/RN1QK2R w KQkq - 0 7",
+      "rnbqkb1r/p1pp1ppp/P4n2/Pp2p3/P3P3/B4N2/bbPPBPPP/RN1QK2R b KQkq - 0 8",
+      "rnBQkb1r/p1pp1ppp/P4n2/Pp2p3/P3P3/b4N2/bbPPBPPP/RN2K2R w KQkq - 0 9",
+      "rnBQkb1r/p4ppp/Pp3n2/Pp2p3/P3P3/b4N2/bbPPBPPP/RN2K2R b KQkq - 0 10"
+  };
 
   init_board(&board);
 
-  for (unsigned int i = 0; i < move_count; ++i) {
-    struct timespec start, end;
-    Move ai_move;
+  printf("Minmax benchmark (%u moves):\n\n", MOVE_COUNT);
+  printf("Depth | Min Time (s) | Max Time (s) | Avg Time (s)\n");
 
-    clock_gettime(CLOCK_MONOTONIC, &start);
-    get_ai_move(&board, color, &ai_move);
-    clock_gettime(CLOCK_MONOTONIC, &end);
+  for (unsigned int depth = 1; depth < 8; depth++) {
+    for (unsigned int i = 0; i < MOVE_COUNT; ++i) {
+      struct timespec start, end;
+      Move ai_move;
+      fen_loads(&board, fen_strs[i]);
 
-    double elapsed = (double)(end.tv_sec - start.tv_sec) +
-                     (double)(end.tv_nsec - start.tv_nsec) / 1e9;
+      clock_gettime(CLOCK_MONOTONIC, &start);
+      minmax_ab(&board, color, color, &ai_move, depth, -INFINITY, INFINITY);
+      clock_gettime(CLOCK_MONOTONIC, &end);
 
-    if (i == 0 || elapsed < min_time) {
-      min_time = elapsed;
+      double elapsed = (double)(end.tv_sec - start.tv_sec) +
+                      (double)(end.tv_nsec - start.tv_nsec) / 1e9;
+
+      if (i == 0 || elapsed < min_time) {
+        min_time = elapsed;
+      }
+      if (i == 0 || elapsed > max_time) {
+        max_time = elapsed;
+      }
+      total_time += elapsed;
+
+      make_move(&board, ai_move.src, ai_move.dest);
+      // color = get_opponent_color(color);
     }
-    if (i == 0 || elapsed > max_time) {
-      max_time = elapsed;
-    }
-    total_time += elapsed;
 
-    move(&board, ai_move.src, ai_move.dest);
-    color = get_opponent_color(color);
-  }
+    printf("%5u | %12.6f | %12.6f | %12.6f\n", depth, min_time, max_time,
+           total_time / MOVE_COUNT);
+  }  
+}
 
-  printf("AI vs AI benchmark (%u moves):\n", move_count);
-  printf("min: %.6f seconds\n", min_time);
-  printf("max: %.6f seconds\n", max_time);
-  printf("avg: %.6f seconds\n", total_time / move_count);
+int main(void) {
+  init_zobrist_hashes();
+  benchmark_minmax();
+  
   return 0;
 }

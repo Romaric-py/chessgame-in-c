@@ -5,8 +5,8 @@
 #include "special_move.h"
 #include "transposition_table.h"
 #include "utils.h"
-#include <stdint.h>
 
+#define ENABLE_TRANS_TABLE 1
 
 static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
   MoveReport report = make_move(board, move_to_apply.src, move_to_apply.dest);
@@ -20,6 +20,12 @@ static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
   return report;
 }
 
+static bool is_search_terminal(ChessBoard *board, unsigned int depth) {
+  return depth <= 0 || is_insufficient_material(board) ||
+         !(has_legal_move(board, CHESS_BLACK) &&
+           has_legal_move(board, CHESS_WHITE));
+}
+
 /*
     It's preferred to use a clone of the board to avoid modifying the original
    board state during the search. However, we won't make clone of the passed
@@ -27,32 +33,32 @@ static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
    cloning of the board before calling this function, to ensure that his
    original board is not modified.
 */
-//! (since we can't garantee yet that our functions are free of side effects)
 
 /*
 alpha: best score ensured by the max color
 beta: best score ensured by the min color
  */
 
-int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color, Move *best_move,
-              unsigned int depth, int alpha, int beta) {
+int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
+              Move *best_move, unsigned int depth, int alpha, int beta) {
+  if (is_search_terminal(board, depth)) {
+    return evaluate_board(board, color_max);
+  }
+
   Move selected_move; // the best move found so far
   Move move;
   int score;
 
-  if (depth <= 0 || is_end_game(board)) {
-    return evaluate_board(board, color_max);
-  }
-
-  /* if (board_hash == 0ULL || depth >= DEPTH) {
-    board_hash = hash_board_state(board);
-  }
-
-  if (fetch_from_transposition_table(board_hash, &score, &selected_move, alpha,
-                                     beta, depth)) { 
+  #if ENABLE_TRANS_TABLE
+  if (fetch_from_transposition_table(board->meta.hash, &score, &selected_move,
+                                     alpha, beta, depth)) {
     *best_move = selected_move;
     return score;
-  }*/
+  }
+
+  int alpha_orig = alpha;
+  int beta_orig = beta;
+  #endif
 
   // If not found in the transposition table, we will compute the score and add
   // it to the table later
@@ -101,16 +107,21 @@ int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color, Mo
   }
 
   *best_move = selected_move;
-  /* add_to_transposition_table(board_hash, best_score, depth, selected_move,
-                             alpha, beta); */
+
+  #if ENABLE_TRANS_TABLE
+  add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
+                             alpha_orig, beta_orig);
+  #endif
+
   return best_score;
 }
 
 /* This version that enables the use of many cpu at once, was written by GPT 5.6
  * Luna via VS Code Copilot SDK
  */
-int minmax_ab_parallel(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
-                       Move *best_move, unsigned int depth) {
+int minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
+                       ChessColor curr_color, Move *best_move,
+                       unsigned int depth) {
 
   MoveList legal_moves;
   generate_legal_moves(board, curr_color, false, &legal_moves);
@@ -120,15 +131,18 @@ int minmax_ab_parallel(ChessBoard *board, ChessColor color_max, ChessColor curr_
   Move selected_move;
   bool has_best = false;
 
-  if (depth <= 0 || is_end_game(board)) {
+  if (is_search_terminal(board, depth)) {
     return evaluate_board(board, color_max);
   }
 
-  /* if (fetch_from_transposition_table(board_hash, &best_score, &selected_move,
-                                     -INFINITY, INFINITY, depth)) {
+  #if ENABLE_TRANS_TABLE
+  if (fetch_from_transposition_table(board->meta.hash, &best_score,
+                                     &selected_move, -INFINITY, INFINITY,
+                                     depth)) {
     *best_move = selected_move;
     return best_score;
-  } */
+  }
+  #endif
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int)legal_moves.count; i++) {
@@ -151,20 +165,21 @@ int minmax_ab_parallel(ChessBoard *board, ChessColor color_max, ChessColor curr_
   }
 
   *best_move = selected_move;
-  /* add_to_transposition_table(board_hash, best_score, depth, selected_move,
-                             -INFINITY, INFINITY); */
+
+  #if ENABLE_TRANS_TABLE
+  add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
+                             -INFINITY, INFINITY);
+  #endif
+
   return best_score;
 }
 
-int evaluate_move_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
-                     Move move_to_apply, unsigned int depth, int alpha,
-                     int beta) {
+int evaluate_move_ab(ChessBoard *board, ChessColor color_max,
+                     ChessColor curr_color, Move move_to_apply,
+                     unsigned int depth, int alpha, int beta) {
   MoveReport report = apply_search_move(board, move_to_apply);
-  // increment_hash_board_state(&board_hash, board, &report);
 
-  if (depth <= 0 || is_end_game(board)) {
-    /* increment_hash_board_state(&board_hash, board,
-                               &report); // revert the hash back */
+  if (is_search_terminal(board, depth)) {
     int score = evaluate_board(board, color_max);
     undo_move(board, &report);
     return score;
@@ -174,8 +189,6 @@ int evaluate_move_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_co
   int score = minmax_ab(board, color_max, opponent_color, &move_to_apply,
                         depth - 1, alpha, beta);
   // undo move
- /*  increment_hash_board_state(&board_hash, board,
-                             &report); // revert the hash back */
   undo_move(board, &report);
   return score;
 }

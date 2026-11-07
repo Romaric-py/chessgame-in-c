@@ -6,10 +6,12 @@
 #include "special_move.h"
 #include "utils.h"
 
-static bool is_safe_range(const ChessBoard *board, Coords src_pos, Coords dest_pos,
-                          int delta_row, int delta_col, ChessColor color);
+static bool is_safe_range(const ChessBoard *board, Coords src_pos,
+                          Coords dest_pos, int delta_row, int delta_col,
+                          ChessColor color);
 
-bool is_enpassant_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_enpassant_move(const ChessBoard *board, Coords src_pos,
+                       Coords dest_pos) {
   if (!ENPASSANT_ACTIVE(*board) ||
       !are_coords_equal(dest_pos, ENPASSANT_POS(*board)) ||
       is_empty_square(board, src_pos) || !is_empty_square(board, dest_pos)) {
@@ -29,7 +31,8 @@ bool is_enpassant_move(const ChessBoard *board, Coords src_pos, Coords dest_pos)
 }
 
 // assumes the move is valid
-bool can_promote_pawn(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool can_promote_pawn(const ChessBoard *board, Coords src_pos,
+                      Coords dest_pos) {
   Piece pawn = get_piece(board, src_pos);
 
   return pawn.name == PAWN &&
@@ -37,7 +40,8 @@ bool can_promote_pawn(const ChessBoard *board, Coords src_pos, Coords dest_pos) 
           (pawn.color == CHESS_BLACK && dest_pos.row == BOARD_SIZE - 1));
 }
 
-bool is_castling_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_castling_move(const ChessBoard *board, Coords src_pos,
+                      Coords dest_pos) {
   Piece src_piece = get_piece(board, src_pos);
 
   // src square should contain a king
@@ -76,8 +80,9 @@ bool is_castling_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) 
              move_direction, color);
 }
 
-static bool is_safe_range(const ChessBoard *board, Coords src_pos, Coords dest_pos,
-                          int delta_row, int delta_col, ChessColor color) {
+static bool is_safe_range(const ChessBoard *board, Coords src_pos,
+                          Coords dest_pos, int delta_row, int delta_col,
+                          ChessColor color) {
   assert(delta_col != 0 || delta_row != 0);
 
   unsigned int row = src_pos.row + delta_row;

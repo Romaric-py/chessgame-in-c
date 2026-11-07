@@ -38,7 +38,8 @@ static bool is_reachable_by_piece(const ChessBoard *board, ChessColor color,
          (get_piece(board, dest_pos).color == get_opponent_color(color));
 }
 
-bool is_pawn_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_pawn_valid_move(const ChessBoard *board, Coords src_pos,
+                        Coords dest_pos) {
   int delta_row = 1;
   unsigned int home_row = 1;
   Piece piece;
@@ -75,14 +76,16 @@ bool is_pawn_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos
        (get_piece(board, dest_pos).color == get_opponent_color(piece.color)));
 }
 
-bool is_pawn_2steps_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_pawn_2steps_move(const ChessBoard *board, Coords src_pos,
+                         Coords dest_pos) {
   Piece piece = get_piece(board, src_pos);
   int delta_row = (piece.color == CHESS_BLACK) ? 1 : -1;
   return piece.name == PAWN && dest_pos.row == src_pos.row + 2 * delta_row &&
          is_pawn_valid_move(board, src_pos, dest_pos);
 }
 
-bool is_knight_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_knight_valid_move(const ChessBoard *board, Coords src_pos,
+                          Coords dest_pos) {
   Piece piece = get_piece(board, src_pos);
 
   int row_diff = dest_pos.row - src_pos.row;
@@ -94,7 +97,8 @@ bool is_knight_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_p
          is_reachable_by_piece(board, piece.color, dest_pos);
 }
 
-bool is_rook_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_rook_valid_move(const ChessBoard *board, Coords src_pos,
+                        Coords dest_pos) {
   Piece piece = get_piece(board, src_pos);
 
   // src_pos and dest_pos should have the same column or the same row (not both)
@@ -110,7 +114,8 @@ bool is_rook_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos
   return is_reachable_by_piece(board, piece.color, dest_pos) && range_free;
 }
 
-bool is_bishop_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_bishop_valid_move(const ChessBoard *board, Coords src_pos,
+                          Coords dest_pos) {
   Piece piece = get_piece(board, src_pos);
 
   if (are_coords_equal(src_pos, dest_pos)) {
@@ -131,12 +136,14 @@ bool is_bishop_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_p
   return is_reachable_by_piece(board, piece.color, dest_pos) && range_free;
 }
 
-bool is_queen_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_queen_valid_move(const ChessBoard *board, Coords src_pos,
+                         Coords dest_pos) {
   return is_bishop_valid_move(board, src_pos, dest_pos) ||
          is_rook_valid_move(board, src_pos, dest_pos);
 }
 
-bool is_king_valid_move(const ChessBoard *board, Coords src_pos, Coords dest_pos) {
+bool is_king_valid_move(const ChessBoard *board, Coords src_pos,
+                        Coords dest_pos) {
   Piece piece = get_piece(board, src_pos);
 
   int row_diff = dest_pos.row - src_pos.row;

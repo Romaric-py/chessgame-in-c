@@ -30,7 +30,7 @@ bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
 bool add_position_to_history(PositionHistory *history, const ChessBoard *board,
                              ChessColor color_to_move);
 
-bool is_threefold_repetition(const PositionHistory *history, const ChessBoard *board,
-                             ChessColor color_to_move);
+bool is_threefold_repetition(const PositionHistory *history,
+                             const ChessBoard *board, ChessColor color_to_move);
 
 #endif

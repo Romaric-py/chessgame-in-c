@@ -129,8 +129,8 @@ void test_pawn_promotion_generates_all_choices(void) {
   set_piece(&board, create_coords(0, 7), create_piece(KING, CHESS_BLACK));
   set_piece(&board, create_coords(1, 0), create_piece(PAWN, CHESS_WHITE));
 
-  MoveList moves =
-      generate_legal_moves_for_pawn(&board, CHESS_WHITE, create_coords(1, 0), false);
+  MoveList moves = generate_legal_moves_for_pawn(&board, CHESS_WHITE,
+                                                 create_coords(1, 0), false);
 
   CU_ASSERT_EQUAL(moves.count, 4);
   CU_ASSERT_EQUAL(moves.moves[0].promotion, QUEEN);

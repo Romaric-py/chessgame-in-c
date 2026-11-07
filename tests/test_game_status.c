@@ -104,7 +104,8 @@ void test_draw_by_fifty_move_rule(void) {
 
   board.meta.halfmove_clock = 100;
 
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL), GAME_DRAW_50_MOVE_RULE);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL),
+                  GAME_DRAW_50_MOVE_RULE);
   CU_ASSERT_TRUE(is_end_game(&board));
 }
 
@@ -162,8 +163,10 @@ void test_draw_states_are_checked_before_turn_status(void) {
   add_piece(&board, 2, 2, BISHOP, CHESS_WHITE);
   board.meta.halfmove_clock = 100;
 
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL), GAME_DRAW_50_MOVE_RULE);
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_BLACK, NULL), GAME_DRAW_50_MOVE_RULE);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL),
+                  GAME_DRAW_50_MOVE_RULE);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_BLACK, NULL),
+                  GAME_DRAW_50_MOVE_RULE);
 }
 
 void test_timed_game_reports_timeout_for_the_player_to_move(void) {
@@ -175,8 +178,10 @@ void test_timed_game_reports_timeout_for_the_player_to_move(void) {
       .is_timed = true,
   };
 
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_BLACK, &context), GAME_LOSS_TIMEOUT);
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_BLACK, &context),
+                  GAME_LOSS_TIMEOUT);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
+                  GAME_IN_PROGRESS);
   free_position_history(&context.history);
 }
 
@@ -189,7 +194,8 @@ void test_untimed_game_does_not_timeout_at_zero_seconds(void) {
       .is_timed = false,
   };
 
-  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context), GAME_IN_PROGRESS);
+  CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
+                  GAME_IN_PROGRESS);
   free_position_history(&context.history);
 }
 
@@ -201,9 +207,12 @@ void test_context_reports_threefold_repetition(void) {
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_WHITE));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_WHITE));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_WHITE));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_WHITE));
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                   GAME_DRAW_3FOLD_REPETITION);
   free_position_history(&context.history);
@@ -218,8 +227,10 @@ void test_context_does_not_report_repetition_before_three_occurrences(void) {
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_WHITE));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_WHITE));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_WHITE));
   CU_ASSERT_NOT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                       GAME_DRAW_3FOLD_REPETITION);
   free_position_history(&context.history);
@@ -233,9 +244,12 @@ void test_repetition_requires_same_side_to_move(void) {
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_BLACK));
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_BLACK));
-  CU_ASSERT_TRUE(add_position_to_history(&context.history, &board, CHESS_BLACK));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_BLACK));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_BLACK));
+  CU_ASSERT_TRUE(
+      add_position_to_history(&context.history, &board, CHESS_BLACK));
   CU_ASSERT_NOT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                       GAME_DRAW_3FOLD_REPETITION);
   free_position_history(&context.history);

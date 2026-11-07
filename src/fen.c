@@ -18,8 +18,10 @@ static void dump_board(const ChessBoard *board, char *fen_str, size_t *offset);
 static void dump_turn(const ChessBoard *board, char *fen_str, size_t *offset);
 static void add_space(char *fen_str, size_t *offset);
 static void dump_uint(unsigned int value, char *fen_str, size_t *offset);
-static void dump_castling(const ChessBoard *board, char *fen_str, size_t *offset);
-static void dump_en_passant(const ChessBoard *board, char *fen_str, size_t *offset);
+static void dump_castling(const ChessBoard *board, char *fen_str,
+                          size_t *offset);
+static void dump_en_passant(const ChessBoard *board, char *fen_str,
+                            size_t *offset);
 
 bool is_valid_fen_string(const char *fen_str) {
   if (fen_str == NULL) {
@@ -204,7 +206,8 @@ static void dump_board(const ChessBoard *board, char *fen_str, size_t *offset) {
   fen_str[(*offset)] = '\0';
 }
 
-static void dump_castling(const ChessBoard *board, char *fen_str, size_t *offset) {
+static void dump_castling(const ChessBoard *board, char *fen_str,
+                          size_t *offset) {
   size_t start = *offset;
 
   if (CASTLE_K(*board, CHESS_WHITE)) {
@@ -225,7 +228,8 @@ static void dump_castling(const ChessBoard *board, char *fen_str, size_t *offset
   fen_str[(*offset)] = '\0';
 }
 
-static void dump_en_passant(const ChessBoard *board, char *fen_str, size_t *offset) {
+static void dump_en_passant(const ChessBoard *board, char *fen_str,
+                            size_t *offset) {
   if (!ENPASSANT_ACTIVE(*board)) {
     fen_str[(*offset)++] = '-';
   } else {

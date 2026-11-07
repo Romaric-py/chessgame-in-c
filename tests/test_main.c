@@ -1,5 +1,5 @@
-#include <CUnit/Basic.h>
 #include "transposition_table.h"
+#include <CUnit/Basic.h>
 
 void register_move_check_tests(void);
 void register_king_check_tests(void);

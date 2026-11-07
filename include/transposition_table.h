@@ -46,7 +46,7 @@ bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move,
 void clear_transposition_table();
 
 void update_castling_hash(uint64_t *hash, const BoardMetaData *meta,
-                               ChessColor color);
+                          ChessColor color);
 
 uint64_t get_position_enpassant_hash(Coords pos);
 

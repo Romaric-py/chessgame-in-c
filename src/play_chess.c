@@ -82,7 +82,8 @@ void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
   Move move_to_play;
   bool can_promote;
 
-  FuncGetMove get_move = (color == CHESS_BLACK) ? black_get_move : white_get_move;
+  FuncGetMove get_move =
+      (color == CHESS_BLACK) ? black_get_move : white_get_move;
   get_move(board, color, &move_to_play);
 
   write_move(moves_file, move_to_play.src, move_to_play.dest);
@@ -101,8 +102,6 @@ void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
   clear_screen();
   display_board(board);
 }
-
-
 
 void play_chess(ChessColor *winner, bool *draw, FuncGetMove black_get_move,
                 FuncGetMove white_get_move) {

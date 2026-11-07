@@ -16,10 +16,8 @@ static void _update_king_position(ChessBoard *board, Coords src_pos,
 static void _update_move_counters(ChessBoard *board, Piece moved_piece,
                                   Piece captured_piece);
 static void _update_board_hash(ChessBoard *board, Piece piece, Coords pos);
-static void _update_metadata_hash(uint64_t *hash,
-                                  const BoardMetaData *old_meta,
+static void _update_metadata_hash(uint64_t *hash, const BoardMetaData *old_meta,
                                   const BoardMetaData *new_meta);
-
 
 // ChessColor
 ChessColor get_opponent_color(ChessColor color) {
@@ -31,9 +29,7 @@ Piece create_piece(PieceName name, ChessColor color) {
   return (Piece){.name = name, .color = color};
 }
 
-bool is_none_piece(Piece piece) {
-  return piece.name == NONE;
-}
+bool is_none_piece(Piece piece) { return piece.name == NONE; }
 
 bool are_pieces_equal(Piece piece1, Piece piece2) {
   return (piece1.name == piece2.name) && (piece1.color == piece2.color);
@@ -132,8 +128,7 @@ void set_piece(ChessBoard *board, Coords pos, Piece piece) {
     Piece p = get_piece(board, pos);
     _update_board_hash(board, p, pos);
     PIECE_COUNT(*board, p.color, p.name)--;
-    if (p.name == KING &&
-        are_coords_equal(KING_POS(*board, p.color), pos)) {
+    if (p.name == KING && are_coords_equal(KING_POS(*board, p.color), pos)) {
       KING_POS(*board, p.color) =
           (Coords){.row = BOARD_SIZE, .col = BOARD_SIZE};
     }
@@ -240,7 +235,9 @@ void undo_move(ChessBoard *board, const MoveReport *move_report) {
                                            : move_report->captured_piece);
   // Restore the board state to what it was before the move
   board->meta = move_report->old_meta;
-  // If we restore the board state first, since set_piece will update the piece counts, we will have a wrong piece count. So we restore the board state after restoring the pieces.
+  // If we restore the board state first, since set_piece will update the piece
+  // counts, we will have a wrong piece count. So we restore the board state
+  // after restoring the pieces.
 }
 
 bool is_castling_state_consistent(const ChessBoard *board) {
@@ -252,8 +249,10 @@ bool is_castling_state_consistent(const ChessBoard *board) {
   bool rook_h_well_placed = are_pieces_equal(
       get_piece(board, create_coords(7, 7)), create_piece(ROOK, CHESS_WHITE));
 
-  if ((CASTLE_K(*board, CHESS_WHITE) && !(king_well_placed && rook_h_well_placed)) ||
-      (CASTLE_Q(*board, CHESS_WHITE) && !(king_well_placed && rook_a_well_placed))) {
+  if ((CASTLE_K(*board, CHESS_WHITE) &&
+       !(king_well_placed && rook_h_well_placed)) ||
+      (CASTLE_Q(*board, CHESS_WHITE) &&
+       !(king_well_placed && rook_a_well_placed))) {
     return false;
   }
 
@@ -265,8 +264,10 @@ bool is_castling_state_consistent(const ChessBoard *board) {
   rook_h_well_placed = are_pieces_equal(get_piece(board, create_coords(0, 7)),
                                         create_piece(ROOK, CHESS_BLACK));
 
-  if ((CASTLE_K(*board, CHESS_BLACK) && !(king_well_placed && rook_h_well_placed)) ||
-      (CASTLE_Q(*board, CHESS_BLACK) && !(king_well_placed && rook_a_well_placed))) {
+  if ((CASTLE_K(*board, CHESS_BLACK) &&
+       !(king_well_placed && rook_h_well_placed)) ||
+      (CASTLE_Q(*board, CHESS_BLACK) &&
+       !(king_well_placed && rook_a_well_placed))) {
     return false;
   }
 
@@ -331,11 +332,10 @@ void sync_board_meta_data(ChessBoard *board) {
   board->meta.hash = hash_board_state(board);
 }
 
-
-
 // Static helper functions
 
-// Initialize the piece_counts array in BoardMetaData to zero for both colors and all piece types.
+// Initialize the piece_counts array in BoardMetaData to zero for both colors
+// and all piece types.
 static void _init_piece_counts(ChessBoard *board) {
   for (int color = 0; color < 2; color++) {
     for (int piece_name = 0; piece_name < 6; piece_name++) {
@@ -360,7 +360,8 @@ static void _init_meta(ChessBoard *board) {
   _init_piece_counts(board);
 }
 
-// Iterate over the board and count the pieces for each color and type, updating the piece_counts array in BoardMetaData.
+// Iterate over the board and count the pieces for each color and type, updating
+// the piece_counts array in BoardMetaData.
 static void _count_pieces(ChessBoard *board) {
   _init_piece_counts(board);
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
@@ -373,14 +374,15 @@ static void _count_pieces(ChessBoard *board) {
   }
 }
 
-//! The following function should be moved to the module in charge of Zobrist hashing.
-// Update the Zobrist hash of the board state by XORing the hash value for the given piece at the specified position.
+//! The following function should be moved to the module in charge of Zobrist
+//! hashing.
+// Update the Zobrist hash of the board state by XORing the hash value for the
+// given piece at the specified position.
 static void _update_board_hash(ChessBoard *board, Piece piece, Coords pos) {
   board->meta.hash ^= get_position_piece_hash(pos, piece);
 }
 
-static void _update_metadata_hash(uint64_t *hash,
-                                  const BoardMetaData *old_meta,
+static void _update_metadata_hash(uint64_t *hash, const BoardMetaData *old_meta,
                                   const BoardMetaData *new_meta) {
   if (old_meta->current_turn != new_meta->current_turn) {
     *hash ^= white_turn_hash;
@@ -426,7 +428,10 @@ static void _update_king_position(ChessBoard *board, Coords src_pos,
   KING_POS(*board, piece.color) = dest_pos;
 }
 
-// Update the halfmove clock and fullmove number based on the moved piece and captured piece. If a pawn is moved or a piece is captured, reset the halfmove clock to 0. Otherwise, increment the halfmove clock. Increment the fullmove number after Black's move.
+// Update the halfmove clock and fullmove number based on the moved piece and
+// captured piece. If a pawn is moved or a piece is captured, reset the halfmove
+// clock to 0. Otherwise, increment the halfmove clock. Increment the fullmove
+// number after Black's move.
 static void _update_move_counters(ChessBoard *board, Piece moved_piece,
                                   Piece captured_piece) {
   // Update the halfmove clock

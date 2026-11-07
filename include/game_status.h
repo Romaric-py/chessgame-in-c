@@ -20,5 +20,6 @@ typedef enum GameStatus {
 GameStatus get_game_status(ChessBoard *board, ChessColor color,
                            const GameContext *context);
 bool is_end_game(ChessBoard *board);
+bool is_insufficient_material(const ChessBoard *board);
 
 #endif
