@@ -31,6 +31,8 @@ Coords string_to_coords(const char *input) {
   return create_coords(8 - (row_char - '0'), col_char - 'a');
 }
 
+// ! BUG: This function returns a pointer to a static buffer, which can lead to
+// ! unexpected behavior if called multiple times in a single expression.
 char *coords_to_string(Coords pos) {
   static char buffer[3];
   snprintf(buffer, sizeof(buffer), "%c%d", 'a' + pos.col, 8 - pos.row);

@@ -11,6 +11,7 @@
 #include "render_tui.h"
 #include "special_move.h"
 #include "utils.h"
+#include "polyglot.h"
 
 void get_human_move(ChessBoard *board, ChessColor color, Move *move) {
   do {
@@ -65,8 +66,16 @@ void choose_piece_name(char *prompt, PieceName *name) {
 }
 
 void get_ai_move(ChessBoard *board, ChessColor color, Move *move) {
-  // minmax_ab_parallel(board, color, color, move, DEPTH);
-  minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
+    static unsigned int move_book_counter = 0;
+    if (choose_move_from_book(board, move)) {
+        printf("Move chosen from book (%u) :) \n", ++move_book_counter);
+        sleep(1);
+        return; // Book move found and chosen
+    }
+
+    // Outside the book: fall back to the standard Alpha-Beta search
+    // minmax_ab_parallel(board, color, color, move, DEPTH);
+    minmax_ab(board, color, color, move, DEPTH, -INFINITY, INFINITY);
 }
 
 void make_pawn_promotion(ChessBoard *board, ChessColor color, Coords pos,
@@ -101,6 +110,8 @@ void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
 
   clear_screen();
   display_board(board);
+  printf("Last move: %s ->", coords_to_string(move_to_play.src));
+  printf(" %s\n", coords_to_string(move_to_play.dest));
 }
 
 void play_chess(ChessColor *winner, bool *draw, FuncGetMove black_get_move,

@@ -1,3 +1,4 @@
 /bin/*
-src/moves.txt
+output/*
+data/*
 tmp*

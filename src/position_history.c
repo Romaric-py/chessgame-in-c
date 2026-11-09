@@ -39,6 +39,30 @@ bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
       }
     }
   }
+
+  if (entry->board.meta.current_turn != board->meta.current_turn) {
+    return false;
+  }
+
+  if (entry->board.meta.enpassant.is_active !=
+      board->meta.enpassant.is_active) {
+    return false;
+  }
+  if (entry->board.meta.enpassant.is_active &&
+      (entry->board.meta.enpassant.target_pos.row !=
+           board->meta.enpassant.target_pos.row ||
+       entry->board.meta.enpassant.target_pos.col !=
+           board->meta.enpassant.target_pos.col)) {
+    return false;
+  }
+
+  if (CASTLE_K(entry->board, CHESS_WHITE) != CASTLE_K(*board, CHESS_WHITE) ||
+      CASTLE_Q(entry->board, CHESS_WHITE) != CASTLE_Q(*board, CHESS_WHITE) ||
+      CASTLE_K(entry->board, CHESS_BLACK) != CASTLE_K(*board, CHESS_BLACK) ||
+      CASTLE_Q(entry->board, CHESS_BLACK) != CASTLE_Q(*board, CHESS_BLACK)) {
+    return false;
+  }
+
   return true;
 }
 

@@ -281,46 +281,20 @@ bool is_enpassant_state_consistent(const ChessBoard *board) {
 
   Coords target_pos = ENPASSANT_POS(*board);
 
-  // Check if the target square is empty
   if (!is_empty_square(board, target_pos)) {
     return false;
   }
 
-  // Check if the target square is on the correct rank for en passant
   if (target_pos.row != 2 && target_pos.row != 5) {
     return false;
   }
 
-  // Determine the color of the pawn that can perform the en passant capture
-  ChessColor attacker_color = (target_pos.row == 2) ? CHESS_WHITE : CHESS_BLACK;
-  int row_delta = (attacker_color == CHESS_BLACK) ? -1 : 1;
-
-  // Check the left square for the attacking pawn
-  if (target_pos.col > 0) {
-    Coords left_pos =
-        create_coords(target_pos.row + row_delta, target_pos.col - 1);
-    Piece left_piece = get_piece(board, left_pos);
-    if (left_piece.name != PAWN || left_piece.color != attacker_color) {
-      return false;
-    }
-  }
-
-  // Check the right square for the attacking pawn
-  if (target_pos.col < BOARD_SIZE - 1) {
-    Coords right_pos =
-        create_coords(target_pos.row + row_delta, target_pos.col + 1);
-    Piece right_piece = get_piece(board, right_pos);
-    if (right_piece.name != PAWN || right_piece.color != attacker_color) {
-      return false;
-    }
-  }
-
-  // Check if the attacked pawn is in the correct position (one rank behind the
-  // target square)
-  Coords attacked_pawn_pos =
-      create_coords(target_pos.row + row_delta, target_pos.col);
-  Piece attacked_pawn = get_piece(board, attacked_pawn_pos);
-  if (attacked_pawn.name != PAWN || attacked_pawn.color == attacker_color) {
+  unsigned int pawn_row = target_pos.row == 2 ? target_pos.row + 1
+                                               : target_pos.row - 1;
+  Piece pawn = get_piece(
+      board, create_coords(pawn_row, target_pos.col));
+  if (pawn.name != PAWN ||
+      pawn.color == board->meta.current_turn) {
     return false;
   }
 

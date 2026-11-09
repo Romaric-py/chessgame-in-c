@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -O2 -fopenmp -Iinclude -std=c99
 LDFLAGS_CUNIT = -lcunit
 
-SRC = src/chessboard.c src/movelist.c src/move_check.c src/render_tui.c src/utils.c src/play_chess.c src/king_check.c src/legal_move.c src/game_status.c src/minmax.c src/special_move.c src/position_history.c src/transposition_table.c src/fen.c
+SRC = src/chessboard.c src/movelist.c src/move_check.c src/render_tui.c src/utils.c src/play_chess.c src/king_check.c src/legal_move.c src/game_status.c src/minmax.c src/special_move.c src/position_history.c src/transposition_table.c src/fen.c src/polyglot.c
 
 all: bin/chessgame
 

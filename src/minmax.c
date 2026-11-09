@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "minmax.h"
 #include "game_status.h"
 #include "legal_move.h"
@@ -39,15 +40,15 @@ alpha: best score ensured by the max color
 beta: best score ensured by the min color
  */
 
-int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
-              Move *best_move, unsigned int depth, int alpha, int beta) {
+int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
+              Move *best_move, unsigned int depth, int32_t alpha, int32_t beta) {
   if (is_search_terminal(board, depth)) {
     return evaluate_board(board, color_max);
   }
 
   Move selected_move; // the best move found so far
   Move move;
-  int score;
+  int32_t score;
 
   #if ENABLE_TRANS_TABLE
   if (fetch_from_transposition_table(board->meta.hash, &score, &selected_move,
@@ -56,15 +57,15 @@ int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
     return score;
   }
 
-  int alpha_orig = alpha;
-  int beta_orig = beta;
+  int32_t alpha_orig = alpha;
+  int32_t beta_orig = beta;
   #endif
 
   // If not found in the transposition table, we will compute the score and add
   // it to the table later
 
   bool max_step = (curr_color == color_max);
-  int best_score = max_step ? -INFINITY : INFINITY;
+  int32_t best_score = max_step ? -INFINITY : INFINITY;
 
   MoveList legal_moves;
   generate_legal_moves(board, curr_color, false, &legal_moves);
@@ -119,7 +120,7 @@ int minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
 /* This version that enables the use of many cpu at once, was written by GPT 5.6
  * Luna via VS Code Copilot SDK
  */
-int minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
+int32_t minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
                        ChessColor curr_color, Move *best_move,
                        unsigned int depth) {
 
@@ -127,7 +128,7 @@ int minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
   generate_legal_moves(board, curr_color, false, &legal_moves);
   order_captures_first(&legal_moves);
 
-  int best_score = (curr_color == color_max) ? -INFINITY : INFINITY;
+  int32_t best_score = (curr_color == color_max) ? -INFINITY : INFINITY;
   Move selected_move;
   bool has_best = false;
 
@@ -148,7 +149,7 @@ int minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
   for (int i = 0; i < (int)legal_moves.count; i++) {
     Move move = legal_moves.moves[i];
     ChessBoard board_copy = clone_board(board);
-    int score = evaluate_move_ab(&board_copy, color_max, curr_color, move,
+    int32_t score = evaluate_move_ab(&board_copy, color_max, curr_color, move,
                                  depth, -INFINITY, INFINITY);
 
 #pragma omp critical
@@ -174,27 +175,27 @@ int minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
   return best_score;
 }
 
-int evaluate_move_ab(ChessBoard *board, ChessColor color_max,
+int32_t evaluate_move_ab(ChessBoard *board, ChessColor color_max,
                      ChessColor curr_color, Move move_to_apply,
-                     unsigned int depth, int alpha, int beta) {
+                     unsigned int depth, int32_t alpha, int32_t beta) {
   MoveReport report = apply_search_move(board, move_to_apply);
 
   if (is_search_terminal(board, depth)) {
-    int score = evaluate_board(board, color_max);
+    int32_t score = evaluate_board(board, color_max);
     undo_move(board, &report);
     return score;
   }
 
   ChessColor opponent_color = get_opponent_color(curr_color);
-  int score = minmax_ab(board, color_max, opponent_color, &move_to_apply,
+  int32_t score = minmax_ab(board, color_max, opponent_color, &move_to_apply,
                         depth - 1, alpha, beta);
   // undo move
   undo_move(board, &report);
   return score;
 }
 
-int _present_pieces_score(ChessBoard *board, ChessColor color) {
-  int score = 0;
+int32_t _present_pieces_score(ChessBoard *board, ChessColor color) {
+  int32_t score = 0;
   for (unsigned int piece_name = PAWN; piece_name <= QUEEN; piece_name++) {
     score +=
         PIECE_COUNT(*board, color, piece_name) * get_piece_value(piece_name);
@@ -202,7 +203,7 @@ int _present_pieces_score(ChessBoard *board, ChessColor color) {
   return score;
 }
 
-int _board_score(ChessBoard *board, ChessColor color) {
+int32_t _board_score(ChessBoard *board, ChessColor color) {
   GameStatus color_game_status = get_game_status(board, color, NULL);
   if (color_game_status == GAME_CHECKMATE) {
     return -INFINITY; // loses
@@ -211,14 +212,14 @@ int _board_score(ChessBoard *board, ChessColor color) {
     return 0;
   }
 
-  int extra = 0;
+  int32_t extra = 0;
   if (color_game_status == GAME_CHECK) {
-    extra -= 2;
+    extra -= CHECK_BONUS;
   }
   return _present_pieces_score(board, color) + extra;
 }
 
-int evaluate_board(ChessBoard *board, ChessColor color) {
+int32_t evaluate_board(ChessBoard *board, ChessColor color) {
   return _board_score(board, color) -
          _board_score(board, get_opponent_color(color));
 }

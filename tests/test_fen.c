@@ -108,6 +108,13 @@ void test_fen_rejects_inconsistent_en_passant_state(void) {
   CU_ASSERT_FALSE(fen_loads(&board, "4k3/8/8/8/8/8/8/4K3 w - e4 0 1"));
 }
 
+void test_fen_accepts_unavailable_en_passant_capture(void) {
+  ChessBoard board;
+
+  CU_ASSERT_TRUE(
+      fen_loads(&board, "4k3/8/8/8/4P3/8/8/4K3 b - e3 0 1"));
+}
+
 void test_fen_dumps_initial_position(void) {
   ChessBoard board;
   char fen[128] = {0};
@@ -187,6 +194,8 @@ void register_fen_tests(void) {
               test_fen_rejects_inconsistent_castling_rights);
   CU_add_test(suite, "test_fen_rejects_inconsistent_en_passant_state",
               test_fen_rejects_inconsistent_en_passant_state);
+  CU_add_test(suite, "test_fen_accepts_unavailable_en_passant_capture",
+              test_fen_accepts_unavailable_en_passant_capture);
   CU_add_test(suite, "test_fen_dumps_initial_position",
               test_fen_dumps_initial_position);
   CU_add_test(suite, "test_fen_dumps_and_loads_round_trip",

@@ -39,10 +39,10 @@ uint64_t hash_board_state(const ChessBoard *board);
 void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
                                 const MoveReport *move_report);
 
-void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
-                                Move best_move, int alpha, int beta);
-bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move,
-                                    int alpha, int beta, unsigned int depth);
+void add_to_transposition_table(uint64_t hash, int32_t score, unsigned int depth,
+                                Move best_move, int32_t alpha, int32_t beta);
+bool fetch_from_transposition_table(uint64_t hash, int32_t *score, Move *best_move,
+                                    int32_t alpha, int32_t beta, unsigned int depth);
 void clear_transposition_table();
 
 void update_castling_hash(uint64_t *hash, const BoardMetaData *meta,

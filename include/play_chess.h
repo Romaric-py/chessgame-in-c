@@ -4,7 +4,7 @@
 #include "chessboard.h"
 #include "movelist.h"
 
-#define MOVE_RECORD_FILE "src/moves.txt"
+#define MOVE_RECORD_FILE "output/moves.txt"
 
 typedef void (*FuncGetMove)(ChessBoard *, ChessColor, Move *);
 
