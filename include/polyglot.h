@@ -2,22 +2,23 @@
 #ifndef POLYGLOT_H
 #define POLYGLOT_H
 
-#include <stdint.h>
 #include "chessboard.h"
 #include "movelist.h"
+#include <stdint.h>
 
 extern uint64_t polyglot_random[781];
 
 typedef struct {
-    uint64_t key;
-    uint16_t move;
-    uint16_t weight;
-    uint32_t learn;
+  uint64_t key;
+  uint16_t move;
+  uint16_t weight;
+  uint32_t learn;
 } __attribute__((packed)) PolyEntry;
 
 bool choose_move_from_book(ChessBoard *board, Move *move);
 uint64_t compute_polyglot_hash(const ChessBoard *board);
-int get_book_moves(const char *filename, uint64_t board_key, PolyEntry *out_entries, int max_entries);
+int get_book_moves(const char *filename, uint64_t board_key,
+                   PolyEntry *out_entries, int max_entries);
 Move polyglot_move_to_engine_move(uint16_t poly_move);
 
 #endif

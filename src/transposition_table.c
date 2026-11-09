@@ -124,7 +124,8 @@ void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
 }
 
 bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move,
-                                    int32_t alpha, int32_t beta, unsigned int depth) {
+                                    int32_t alpha, int32_t beta,
+                                    unsigned int depth) {
   size_t index = hash & (TT_SIZE - 1); // works because TT_SIZE is a power of 2
 
   if (transposition_table[index].zobrist_key == 0 ||

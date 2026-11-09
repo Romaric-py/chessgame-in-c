@@ -1,99 +1,40 @@
-
-#include <stdlib.h>
-
+#include <string.h>
 #include "position_history.h"
 
-PositionHistory create_position_history() {
-  PositionHistory history = {.entries = NULL, .count = 0, .capacity = 0};
-  return history;
+#define INDEX_FOR(hash) ((hash) & (MAX_POSITION_HISTORY - 1))
+
+PositionHistoryCounter create_position_history_counter() {
+  PositionHistoryCounter counter = {.array = {0}};
+  return counter;
 }
 
-PositionHistoryEntry create_position_history_entry(const ChessBoard *board,
-                                                   ChessColor color_to_move) {
-  PositionHistoryEntry entry = {.board = clone_board(board),
-                                .color_to_move = color_to_move};
-  return entry;
+void clear_position_history_counter(PositionHistoryCounter *counter) {
+  memset(counter->array, 0, sizeof(counter->array));
 }
 
-void free_position_history(PositionHistory *history) {
-  free(history->entries);
-  history->entries = NULL;
-  history->count = 0;
-  history->capacity = 0;
+void free_position_history_counter(PositionHistoryCounter *counter) {
+  // Since we use a fixed-size array, there is no need to free any memory
+  (void)counter; // For avoiding unused parameter warning
 }
 
-bool same_position(const PositionHistoryEntry *entry, const ChessBoard *board,
-                   ChessColor color_to_move) {
-  if (entry->color_to_move != color_to_move) {
-    return false;
-  }
-
-  for (unsigned int row = 0; row < BOARD_SIZE; row++) {
-    for (unsigned int col = 0; col < BOARD_SIZE; col++) {
-      Coords pos = create_coords(row, col);
-      Piece entry_piece = get_piece(&entry->board, pos);
-      Piece board_piece = get_piece(board, pos);
-      if (entry_piece.name != board_piece.name ||
-          entry_piece.color != board_piece.color) {
-        return false;
-      }
-    }
-  }
-
-  if (entry->board.meta.current_turn != board->meta.current_turn) {
-    return false;
-  }
-
-  if (entry->board.meta.enpassant.is_active !=
-      board->meta.enpassant.is_active) {
-    return false;
-  }
-  if (entry->board.meta.enpassant.is_active &&
-      (entry->board.meta.enpassant.target_pos.row !=
-           board->meta.enpassant.target_pos.row ||
-       entry->board.meta.enpassant.target_pos.col !=
-           board->meta.enpassant.target_pos.col)) {
-    return false;
-  }
-
-  if (CASTLE_K(entry->board, CHESS_WHITE) != CASTLE_K(*board, CHESS_WHITE) ||
-      CASTLE_Q(entry->board, CHESS_WHITE) != CASTLE_Q(*board, CHESS_WHITE) ||
-      CASTLE_K(entry->board, CHESS_BLACK) != CASTLE_K(*board, CHESS_BLACK) ||
-      CASTLE_Q(entry->board, CHESS_BLACK) != CASTLE_Q(*board, CHESS_BLACK)) {
-    return false;
-  }
-
-  return true;
+void increment_position_history_counter(PositionHistoryCounter *counter,
+                                        uint64_t hash) {
+  counter->array[INDEX_FOR(hash)]++;
 }
 
-bool add_position_to_history(PositionHistory *history, const ChessBoard *board,
-                             ChessColor color_to_move) {
-  if (history->count == history->capacity) {
-    size_t new_capacity =
-        (history->capacity == 0) ? 128 : history->capacity * 2;
-    PositionHistoryEntry *new_history =
-        realloc(history->entries, new_capacity * sizeof(*new_history));
-    if (new_history == NULL) {
-      return false;
-    }
-    history->entries = new_history;
-    history->capacity = new_capacity;
-  }
-
-  history->entries[history->count] = (PositionHistoryEntry){
-      .board = clone_board(board), .color_to_move = color_to_move};
-  history->count++;
-  return true;
+unsigned int get_position_history_count(const PositionHistoryCounter *counter, uint64_t hash) {
+  return counter->array[INDEX_FOR(hash)];
 }
 
-bool is_threefold_repetition(const PositionHistory *history,
-                             const ChessBoard *board,
-                             ChessColor color_to_move) {
-  unsigned int occurrences = 0;
-  for (size_t i = 0; i < history->count; i++) {
-    if (same_position(&history->entries[i], board, color_to_move)) {
-      occurrences++;
-    }
+void decrement_position_history_counter(PositionHistoryCounter *counter,
+                                        uint64_t hash) {
+  unsigned int index = INDEX_FOR(hash);
+  if (counter->array[index] > 0) {
+    counter->array[index]--;
   }
-  return occurrences >= 3;
+}
+
+bool is_threefold_repetition(const PositionHistoryCounter *counter,
+                             uint64_t hash) {
+  return counter->array[INDEX_FOR(hash)] >= 3;
 }

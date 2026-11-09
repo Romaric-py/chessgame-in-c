@@ -25,7 +25,7 @@ benchmark/compile: src/benchmark.c $(SRC)
 	@mkdir -p bin
 	$(CC) $(CFLAGS) src/benchmark.c $(SRC) -o bin/benchmark
 
-benchmark/run:
+benchmark/run: benchmark/compile
 	./bin/benchmark
 
 format:

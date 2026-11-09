@@ -80,6 +80,16 @@ void test_roque_accepts_black_queenside_castling(void) {
   CU_ASSERT_TRUE(is_castling_move(&board, king, create_coords(0, 2)));
 }
 
+void test_roque_rejects_destination_on_another_rank(void) {
+  ChessBoard board = create_empty_board();
+  Coords king = create_coords(7, 4);
+
+  set_piece(&board, king, create_piece(KING, CHESS_WHITE));
+  set_piece(&board, create_coords(7, 0), create_piece(ROOK, CHESS_WHITE));
+
+  CU_ASSERT_FALSE(is_castling_move(&board, king, create_coords(6, 2)));
+}
+
 void test_roque_rejects_occupied_path_or_moved_piece(void) {
   ChessBoard board = create_empty_board();
   Coords king = create_coords(7, 4);
@@ -169,6 +179,8 @@ void register_special_move_tests(void) {
               test_roque_accepts_white_kingside_castling);
   CU_add_test(suite, "test_roque_accepts_black_queenside_castling",
               test_roque_accepts_black_queenside_castling);
+  CU_add_test(suite, "test_roque_rejects_destination_on_another_rank",
+              test_roque_rejects_destination_on_another_rank);
   CU_add_test(suite, "test_roque_rejects_occupied_path_or_moved_piece",
               test_roque_rejects_occupied_path_or_moved_piece);
   CU_add_test(suite, "test_roque_rejects_attacked_transit_square",

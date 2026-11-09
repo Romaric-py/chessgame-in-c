@@ -6,7 +6,7 @@
 #include "position_history.h"
 
 typedef struct GameContext {
-  PositionHistory history;
+  PositionHistoryCounter history_counter;
   unsigned int remaining_seconds[2]; // CHESS_BLACK & CHESS_WHITE
   bool is_timed;
 } GameContext;

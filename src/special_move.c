@@ -58,6 +58,9 @@ bool is_castling_move(const ChessBoard *board, Coords src_pos,
 
   return !are_coords_equal(src_pos, dest_pos) &&
 
+         // The king must remain on its starting rank while castling.
+         dest_pos.row == src_pos.row &&
+
          // dest_pos.col should be either 2 or 6
          (dest_pos.col == 2 || dest_pos.col == 6) &&
 

@@ -289,12 +289,10 @@ bool is_enpassant_state_consistent(const ChessBoard *board) {
     return false;
   }
 
-  unsigned int pawn_row = target_pos.row == 2 ? target_pos.row + 1
-                                               : target_pos.row - 1;
-  Piece pawn = get_piece(
-      board, create_coords(pawn_row, target_pos.col));
-  if (pawn.name != PAWN ||
-      pawn.color == board->meta.current_turn) {
+  unsigned int pawn_row =
+      target_pos.row == 2 ? target_pos.row + 1 : target_pos.row - 1;
+  Piece pawn = get_piece(board, create_coords(pawn_row, target_pos.col));
+  if (pawn.name != PAWN || pawn.color == board->meta.current_turn) {
     return false;
   }
 

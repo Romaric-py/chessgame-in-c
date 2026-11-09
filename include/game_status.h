@@ -8,6 +8,7 @@
 typedef enum GameStatus {
   GAME_IN_PROGRESS,
   GAME_CHECK,
+  // The following statuses are considered end game statuses
   GAME_CHECKMATE,
   GAME_STALEMATE,
   GAME_DRAW_50_MOVE_RULE,
@@ -19,7 +20,6 @@ typedef enum GameStatus {
 // The argument `color` indicates the color that it is the turn
 GameStatus get_game_status(ChessBoard *board, ChessColor color,
                            const GameContext *context);
-bool is_end_game(ChessBoard *board);
-bool is_insufficient_material(const ChessBoard *board);
+bool is_end_game(ChessBoard *board, const GameContext *context, ChessColor color, GameStatus *status);
 
 #endif

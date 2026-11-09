@@ -6,6 +6,7 @@
 #include "special_move.h"
 #include "transposition_table.h"
 #include "utils.h"
+#include "position_history.h"
 
 #define ENABLE_TRANS_TABLE 1
 
@@ -21,12 +22,6 @@ static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
   return report;
 }
 
-static bool is_search_terminal(ChessBoard *board, unsigned int depth) {
-  return depth <= 0 || is_insufficient_material(board) ||
-         !(has_legal_move(board, CHESS_BLACK) &&
-           has_legal_move(board, CHESS_WHITE));
-}
-
 /*
     It's preferred to use a clone of the board to avoid modifying the original
    board state during the search. However, we won't make clone of the passed
@@ -40,17 +35,19 @@ alpha: best score ensured by the max color
 beta: best score ensured by the min color
  */
 
-int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color,
-              Move *best_move, unsigned int depth, int32_t alpha, int32_t beta) {
-  if (is_search_terminal(board, depth)) {
-    return evaluate_board(board, color_max);
+int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
+                  ChessColor curr_color, Move *best_move, unsigned int depth,
+                  int32_t alpha, int32_t beta, GameContext *context) {
+  GameStatus status;
+  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
+    return evaluate_board(board, color_max, context, depth);
   }
 
   Move selected_move; // the best move found so far
   Move move;
   int32_t score;
 
-  #if ENABLE_TRANS_TABLE
+#if ENABLE_TRANS_TABLE
   if (fetch_from_transposition_table(board->meta.hash, &score, &selected_move,
                                      alpha, beta, depth)) {
     *best_move = selected_move;
@@ -59,7 +56,7 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color
 
   int32_t alpha_orig = alpha;
   int32_t beta_orig = beta;
-  #endif
+#endif
 
   // If not found in the transposition table, we will compute the score and add
   // it to the table later
@@ -75,7 +72,7 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color
     move = legal_moves.moves[i];
 
     score = evaluate_move_ab(board, color_max, curr_color, move, depth, alpha,
-                             beta);
+                             beta, context);
 
     // Best score update
     if (
@@ -109,10 +106,10 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color
 
   *best_move = selected_move;
 
-  #if ENABLE_TRANS_TABLE
+#if ENABLE_TRANS_TABLE
   add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
                              alpha_orig, beta_orig);
-  #endif
+#endif
 
   return best_score;
 }
@@ -121,10 +118,11 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max, ChessColor curr_color
  * Luna via VS Code Copilot SDK
  */
 int32_t minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
-                       ChessColor curr_color, Move *best_move,
-                       unsigned int depth) {
+                           ChessColor curr_color, Move *best_move,
+                           unsigned int depth, GameContext *context) {
 
   MoveList legal_moves;
+  GameStatus status;
   generate_legal_moves(board, curr_color, false, &legal_moves);
   order_captures_first(&legal_moves);
 
@@ -132,25 +130,25 @@ int32_t minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
   Move selected_move;
   bool has_best = false;
 
-  if (is_search_terminal(board, depth)) {
-    return evaluate_board(board, color_max);
+  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
+    return evaluate_board(board, color_max, context, depth);
   }
 
-  #if ENABLE_TRANS_TABLE
+#if ENABLE_TRANS_TABLE
   if (fetch_from_transposition_table(board->meta.hash, &best_score,
                                      &selected_move, -INFINITY, INFINITY,
                                      depth)) {
     *best_move = selected_move;
     return best_score;
   }
-  #endif
+#endif
 
 #pragma omp parallel for schedule(dynamic)
   for (int i = 0; i < (int)legal_moves.count; i++) {
     Move move = legal_moves.moves[i];
     ChessBoard board_copy = clone_board(board);
     int32_t score = evaluate_move_ab(&board_copy, color_max, curr_color, move,
-                                 depth, -INFINITY, INFINITY);
+                                     depth, -INFINITY, INFINITY, context);
 
 #pragma omp critical
     {
@@ -167,30 +165,67 @@ int32_t minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
 
   *best_move = selected_move;
 
-  #if ENABLE_TRANS_TABLE
+#if ENABLE_TRANS_TABLE
   add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
                              -INFINITY, INFINITY);
-  #endif
+#endif
 
   return best_score;
 }
 
 int32_t evaluate_move_ab(ChessBoard *board, ChessColor color_max,
-                     ChessColor curr_color, Move move_to_apply,
-                     unsigned int depth, int32_t alpha, int32_t beta) {
+                         ChessColor curr_color, Move move_to_apply,
+                         unsigned int depth, int32_t alpha, int32_t beta, GameContext *context) {
+  GameStatus status;
   MoveReport report = apply_search_move(board, move_to_apply);
+  if (context != NULL) {
+    increment_position_history_counter(&context->history_counter, board->meta.hash);
+  }
 
-  if (is_search_terminal(board, depth)) {
-    int32_t score = evaluate_board(board, color_max);
+  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
+    int32_t score = evaluate_board(board, color_max, context, depth);
+    if (context != NULL) {
+      decrement_position_history_counter(&context->history_counter, board->meta.hash);
+    }
     undo_move(board, &report);
     return score;
   }
 
   ChessColor opponent_color = get_opponent_color(curr_color);
   int32_t score = minmax_ab(board, color_max, opponent_color, &move_to_apply,
-                        depth - 1, alpha, beta);
+                            depth - 1, alpha, beta, context);
   // undo move
+  if (context != NULL) {
+    decrement_position_history_counter(&context->history_counter, board->meta.hash);
+  }
   undo_move(board, &report);
+  return score;
+}
+
+static bool _is_endgame_phase(const ChessBoard *board) {
+  int total = 0;
+  for (int color = 0; color < 2; color++) {
+    for (int name = BISHOP; name <= QUEEN; name++) {
+      total += PIECE_COUNT(*board, color, name) *get_piece_value(name);
+    }
+  }
+  return total <= 2400;
+}
+ 
+
+static int _positional_score(const ChessBoard *board, ChessColor color) {
+  bool endgame = _is_endgame_phase(board);
+  int score = 0;
+ 
+  for (unsigned int row = 0; row < BOARD_SIZE; row++) {
+    for (unsigned int col = 0; col < BOARD_SIZE; col++) {
+      Piece piece = board->squares[row][col];
+      if (piece.name == NONE || piece.color != color) {
+        continue;
+      }
+      score += heatmap_value(piece, create_coords(row, col), endgame);
+    }
+  }
   return score;
 }
 
@@ -203,23 +238,37 @@ int32_t _present_pieces_score(ChessBoard *board, ChessColor color) {
   return score;
 }
 
-int32_t _board_score(ChessBoard *board, ChessColor color) {
-  GameStatus color_game_status = get_game_status(board, color, NULL);
-  if (color_game_status == GAME_CHECKMATE) {
-    return -INFINITY; // loses
+int32_t evaluate_board(ChessBoard *board, ChessColor color_max,
+                       GameContext *context, unsigned int depth) {
+  ChessColor to_move = board->meta.current_turn;
+  ChessColor other = get_opponent_color(color_max);
+  GameStatus st = get_game_status(board, to_move, context);
+
+  if (st == GAME_CHECKMATE) {
+    int32_t mate = INFINITY + (int32_t)depth * 100;
+    return (to_move == color_max) ? -mate : mate;
   }
-  if (color_game_status == GAME_STALEMATE) {
+  if (st == GAME_STALEMATE || st == GAME_DRAW_50_MOVE_RULE ||
+      st == GAME_DRAW_INSUFFICIENT_MATERIAL ||
+      st == GAME_DRAW_3FOLD_REPETITION) {
     return 0;
   }
 
-  int32_t extra = 0;
-  if (color_game_status == GAME_CHECK) {
-    extra -= CHECK_BONUS;
-  }
-  return _present_pieces_score(board, color) + extra;
-}
+  int32_t score = _present_pieces_score(board, color_max) +
+                  _positional_score(board, color_max) -
+                  _present_pieces_score(board, other) -
+                  _positional_score(board, other);
 
-int32_t evaluate_board(ChessBoard *board, ChessColor color) {
-  return _board_score(board, color) -
-         _board_score(board, get_opponent_color(color));
+  if (st == GAME_CHECK) {
+    score += (to_move == color_max) ? -CHECK_BONUS : CHECK_BONUS;
+  }
+
+  if (context != NULL) {
+    int rep = (int)get_position_history_count(&context->history_counter,
+                                              board->meta.hash) - 1;
+    if (rep > 0) {
+      score -= rep * POSITION_REPETITION_PENALTY;
+    }
+  }
+  return score;
 }

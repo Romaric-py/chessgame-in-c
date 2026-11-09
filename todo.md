@@ -5,6 +5,9 @@
 ### Core
 
 Notes: Polyglot Opening Books, CAISSA Book Creator, EndGame TableBases
+- S'assurer que toutes les méta du board sont dans le hash (par exemple le compteur de demi-coups pour la règle des 50 coups)
+- Pénaliser la profondeur (ex pour vpouvoir mater en moins de coups)
+- 
 
 - Enregistrer les parties dans un format lisible et conventionnel (PGN)
 - Implémenter le protocole UCI (Universal Chess Interface) :

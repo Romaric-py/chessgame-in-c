@@ -111,8 +111,7 @@ void test_fen_rejects_inconsistent_en_passant_state(void) {
 void test_fen_accepts_unavailable_en_passant_capture(void) {
   ChessBoard board;
 
-  CU_ASSERT_TRUE(
-      fen_loads(&board, "4k3/8/8/8/4P3/8/8/4K3 b - e3 0 1"));
+  CU_ASSERT_TRUE(fen_loads(&board, "4k3/8/8/8/4P3/8/8/4K3 b - e3 0 1"));
 }
 
 void test_fen_dumps_initial_position(void) {

@@ -9,6 +9,7 @@
 #include "game_status.h"
 #include "king_check.h"
 #include "legal_move.h"
+#include "transposition_table.h"
 
 static ChessBoard board_with_kings(void) {
   ChessBoard board = create_empty_board();
@@ -106,7 +107,8 @@ void test_draw_by_fifty_move_rule(void) {
 
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL),
                   GAME_DRAW_50_MOVE_RULE);
-  CU_ASSERT_TRUE(is_end_game(&board));
+  GameStatus status;
+  CU_ASSERT_TRUE(is_end_game(&board, NULL, CHESS_WHITE, &status));
 }
 
 void test_draw_by_insufficient_material_with_only_kings(void) {
@@ -114,7 +116,8 @@ void test_draw_by_insufficient_material_with_only_kings(void) {
 
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, NULL),
                   GAME_DRAW_INSUFFICIENT_MATERIAL);
-  CU_ASSERT_TRUE(is_end_game(&board));
+  GameStatus status;
+  CU_ASSERT_TRUE(is_end_game(&board, NULL, CHESS_WHITE, &status));
 }
 
 void test_draw_by_insufficient_material_with_one_minor_piece(void) {
@@ -173,7 +176,7 @@ void test_timed_game_reports_timeout_for_the_player_to_move(void) {
   ChessBoard board = board_with_kings();
   add_piece(&board, 6, 7, PAWN, CHESS_WHITE);
   GameContext context = {
-      .history = create_position_history(),
+      .history_counter = create_position_history_counter(),
       .remaining_seconds = {0, 30},
       .is_timed = true,
   };
@@ -182,77 +185,74 @@ void test_timed_game_reports_timeout_for_the_player_to_move(void) {
                   GAME_LOSS_TIMEOUT);
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                   GAME_IN_PROGRESS);
-  free_position_history(&context.history);
+  free_position_history_counter(&context.history_counter);
 }
 
 void test_untimed_game_does_not_timeout_at_zero_seconds(void) {
   ChessBoard board = board_with_kings();
   add_piece(&board, 6, 7, PAWN, CHESS_WHITE);
   GameContext context = {
-      .history = create_position_history(),
+      .history_counter = create_position_history_counter(),
       .remaining_seconds = {0, 0},
       .is_timed = false,
   };
 
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                   GAME_IN_PROGRESS);
-  free_position_history(&context.history);
+  free_position_history_counter(&context.history_counter);
 }
 
 void test_context_reports_threefold_repetition(void) {
   ChessBoard board = board_with_kings();
   GameContext context = {
-      .history = create_position_history(),
+      .history_counter = create_position_history_counter(),
       .remaining_seconds = {0, 0},
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_WHITE));
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
   CU_ASSERT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                   GAME_DRAW_3FOLD_REPETITION);
-  free_position_history(&context.history);
+  free_position_history_counter(&context.history_counter);
 }
 
 void test_context_does_not_report_repetition_before_three_occurrences(void) {
   ChessBoard board = board_with_kings();
   add_piece(&board, 6, 7, PAWN, CHESS_WHITE);
   GameContext context = {
-      .history = create_position_history(),
+      .history_counter = create_position_history_counter(),
       .remaining_seconds = {30, 30},
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_WHITE));
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_WHITE));
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
   CU_ASSERT_NOT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                       GAME_DRAW_3FOLD_REPETITION);
-  free_position_history(&context.history);
+  free_position_history_counter(&context.history_counter);
 }
 
 void test_repetition_requires_same_side_to_move(void) {
   ChessBoard board = board_with_kings();
   GameContext context = {
-      .history = create_position_history(),
+      .history_counter = create_position_history_counter(),
       .remaining_seconds = {30, 30},
       .is_timed = false,
   };
 
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_BLACK));
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_BLACK));
-  CU_ASSERT_TRUE(
-      add_position_to_history(&context.history, &board, CHESS_BLACK));
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+  board.meta.current_turn = CHESS_BLACK;
+  board.meta.hash = hash_board_state(&board);
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+  board.meta.current_turn = CHESS_WHITE;
+  board.meta.hash = hash_board_state(&board);
+  increment_position_history_counter(&context.history_counter, board.meta.hash);
+
   CU_ASSERT_NOT_EQUAL(get_game_status(&board, CHESS_WHITE, &context),
                       GAME_DRAW_3FOLD_REPETITION);
-  free_position_history(&context.history);
+  free_position_history_counter(&context.history_counter);
 }
 
 void register_game_status_tests(void) {
