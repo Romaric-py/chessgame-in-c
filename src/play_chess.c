@@ -13,7 +13,6 @@
 #include "special_move.h"
 #include "utils.h"
 
-
 char *piece_name_to_string(PieceName name) {
   switch (name) {
   case PAWN:
@@ -33,7 +32,8 @@ char *piece_name_to_string(PieceName name) {
   }
 }
 
-void get_human_move(ChessBoard *board, ChessColor color, Move *move, GameContext *context) {
+void get_human_move(ChessBoard *board, ChessColor color, Move *move,
+                    GameContext *context) {
   if (context != NULL && context->is_timed) {
     printf("Remaining time: %u seconds\n", context->remaining_seconds[color]);
   }
@@ -88,7 +88,8 @@ void choose_piece_name(char *prompt, PieceName *name) {
   }
 }
 
-void get_ai_move(ChessBoard *board, ChessColor color, Move *move, GameContext *context) {
+void get_ai_move(ChessBoard *board, ChessColor color, Move *move,
+                 GameContext *context) {
   static unsigned int move_book_counter = 0;
   if (choose_move_from_book(board, move)) {
     printf("Move chosen from book (%u) :) \n", ++move_book_counter);
@@ -108,7 +109,8 @@ void make_pawn_promotion(ChessBoard *board, ChessColor color, Coords pos,
 }
 
 void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
-                FuncGetMove white_get_move, GameContext *context, FILE *moves_file) {
+                FuncGetMove white_get_move, GameContext *context,
+                FILE *moves_file) {
   printf("%s's turn\n", (color == CHESS_BLACK) ? "Black" : "White");
   Move move_to_play;
   bool can_promote;
@@ -135,7 +137,9 @@ void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
   printf("Last move: %s ->", coords_to_string(report.src_pos));
   printf(" %s", coords_to_string(report.dest_pos));
   if (report.captured_piece.name != NONE) {
-    printf(" (captured %s %s)", (report.captured_piece.color == CHESS_WHITE) ? "White" : "Black", piece_name_to_string(report.captured_piece.name));
+    printf(" (captured %s %s)",
+           (report.captured_piece.color == CHESS_WHITE) ? "White" : "Black",
+           piece_name_to_string(report.captured_piece.name));
   }
   printf("\n");
 }
@@ -170,7 +174,8 @@ void play_chess(ChessColor *winner, bool *draw, FuncGetMove black_get_move,
   display_board(&board);
 
   while (!end_game) {
-    chess_turn(&board, curr_color, black_get_move, white_get_move, &context, moves_file);
+    chess_turn(&board, curr_color, black_get_move, white_get_move, &context,
+               moves_file);
 
     opponent_color = get_opponent_color(curr_color);
     game_status = get_game_status(&board, opponent_color, &context);
@@ -192,7 +197,8 @@ void play_chess(ChessColor *winner, bool *draw, FuncGetMove black_get_move,
     }
 
     curr_color = opponent_color;
-    increment_position_history_counter(&context.history_counter, board.meta.hash);
+    increment_position_history_counter(&context.history_counter,
+                                       board.meta.hash);
   }
 
   free_position_history_counter(&context.history_counter);

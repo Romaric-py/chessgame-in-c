@@ -83,7 +83,8 @@ GameStatus get_game_status(ChessBoard *board, ChessColor color,
   return king_in_check ? GAME_CHECK : GAME_IN_PROGRESS;
 }
 
-bool is_end_game(ChessBoard *board, const GameContext *context, ChessColor color, GameStatus *status) {
+bool is_end_game(ChessBoard *board, const GameContext *context,
+                 ChessColor color, GameStatus *status) {
   *status = get_game_status(board, color, context);
   return *status != GAME_IN_PROGRESS && *status != GAME_CHECK;
 }

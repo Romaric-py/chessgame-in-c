@@ -1,5 +1,5 @@
-#include <string.h>
 #include "position_history.h"
+#include <string.h>
 
 #define INDEX_FOR(hash) ((hash) & (MAX_POSITION_HISTORY - 1))
 
@@ -22,7 +22,8 @@ void increment_position_history_counter(PositionHistoryCounter *counter,
   counter->array[INDEX_FOR(hash)]++;
 }
 
-unsigned int get_position_history_count(const PositionHistoryCounter *counter, uint64_t hash) {
+unsigned int get_position_history_count(const PositionHistoryCounter *counter,
+                                        uint64_t hash) {
   return counter->array[INDEX_FOR(hash)];
 }
 

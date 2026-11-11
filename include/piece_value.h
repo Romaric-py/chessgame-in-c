@@ -8,18 +8,17 @@
 // opponent in check, so the bonus is not too high. The bonus is not too low
 // either, because putting the opponent in check is a good thing. I decide it's
 // better than losing a pawn, but not better than losing a knight. So I choose
-// this value as the bonus, which is less than the value of a knight and more than
-// the value of a pawn.
+// this value as the bonus, which is less than the value of a knight and more
+// than the value of a pawn.
 
 #define POSITION_REPETITION_PENALTY 10 // penalty for threefold repetition
 
-int pieces_values[6] = {100, 330, 320,
-                        500, 900, 10000}; // PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
+int pieces_values[6] = {100, 330,  320, 500,
+                        900, 10000}; // PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
 
 static inline int get_piece_value(PieceName piece_name) {
   return pieces_values[piece_name];
 }
-
 
 // Relative to white player
 static const int piece_heatmap[6][8][8] = {
@@ -90,7 +89,7 @@ static const int piece_heatmap[6][8][8] = {
         {20, 30, 10, 0, 0, 10, 30, 20},
     },
 };
- 
+
 // King at endgame: should be more active, so the heatmap is different.
 static const int king_endgame_heatmap[8][8] = {
     {-50, -40, -30, -20, -20, -30, -40, -50},
@@ -106,7 +105,7 @@ static const int king_endgame_heatmap[8][8] = {
 static inline int heatmap_value(Piece piece, Coords pos, bool endgame) {
   unsigned int row =
       (piece.color == CHESS_WHITE) ? pos.row : BOARD_SIZE - 1 - pos.row;
- 
+
   if (piece.name == KING && endgame) {
     return king_endgame_heatmap[row][pos.col];
   }

@@ -111,7 +111,8 @@ uint64_t hash_board_state(const ChessBoard *board) {
 }
 
 void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
-                                Move best_move, int32_t alpha, int32_t beta, ChessColor perspective_color) {
+                                Move best_move, int32_t alpha, int32_t beta,
+                                ChessColor perspective_color) {
   if (perspective_color == CHESS_WHITE) {
     hash ^= white_perspective_hash;
   }
@@ -132,7 +133,8 @@ void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
 
 bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move,
                                     int32_t alpha, int32_t beta,
-                                    unsigned int depth, ChessColor perspective_color) {
+                                    unsigned int depth,
+                                    ChessColor perspective_color) {
   if (perspective_color == CHESS_WHITE) {
     hash ^= white_perspective_hash;
   }

@@ -1,10 +1,10 @@
 #ifndef MINMAX_H
 #define MINMAX_H
 
-#include <stdint.h>
 #include "chessboard.h"
-#include "movelist.h"
 #include "game_context.h"
+#include "movelist.h"
+#include <stdint.h>
 
 #define INFINITY 10000000
 #define MATE_SCORE 10000000

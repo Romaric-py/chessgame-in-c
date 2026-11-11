@@ -5,8 +5,8 @@
 
 #include "fen.h"
 #include "minmax.h"
-#include "transposition_table.h"
 #include "position_history.h"
+#include "transposition_table.h"
 
 #define MOVE_COUNT 10
 
@@ -37,11 +37,14 @@ static void benchmark_minmax(void) {
     for (unsigned int i = 0; i < MOVE_COUNT; ++i) {
       struct timespec start, end;
       Move ai_move;
-      GameContext context = {.is_timed = false, .history_counter = create_position_history_counter()};
+      GameContext context = {.is_timed = false,
+                             .history_counter =
+                                 create_position_history_counter()};
       fen_loads(&board, fen_strs[i]);
 
       clock_gettime(CLOCK_MONOTONIC, &start);
-      minmax_ab(&board, color, color, &ai_move, depth, -INFINITY, INFINITY, &context);
+      minmax_ab(&board, color, color, &ai_move, depth, -INFINITY, INFINITY,
+                &context);
       clock_gettime(CLOCK_MONOTONIC, &end);
 
       double elapsed = (double)(end.tv_sec - start.tv_sec) +

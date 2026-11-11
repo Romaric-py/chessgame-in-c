@@ -41,10 +41,12 @@ void increment_hash_board_state(uint64_t *hash, ChessBoard *board,
 
 void add_to_transposition_table(uint64_t hash, int32_t score,
                                 unsigned int depth, Move best_move,
-                                int32_t alpha, int32_t beta, ChessColor perspective_color);
+                                int32_t alpha, int32_t beta,
+                                ChessColor perspective_color);
 bool fetch_from_transposition_table(uint64_t hash, int32_t *score,
                                     Move *best_move, int32_t alpha,
-                                    int32_t beta, unsigned int depth, ChessColor perspective_color);
+                                    int32_t beta, unsigned int depth,
+                                    ChessColor perspective_color);
 void clear_transposition_table();
 
 void update_castling_hash(uint64_t *hash, const BoardMetaData *meta,

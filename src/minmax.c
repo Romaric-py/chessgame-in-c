@@ -1,12 +1,12 @@
-#include <stdint.h>
 #include "minmax.h"
 #include "game_status.h"
 #include "legal_move.h"
 #include "piece_value.h"
+#include "position_history.h"
 #include "special_move.h"
 #include "transposition_table.h"
 #include "utils.h"
-#include "position_history.h"
+#include <stdint.h>
 
 #define ENABLE_TRANS_TABLE 1
 
@@ -39,7 +39,8 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
                   ChessColor curr_color, Move *best_move, unsigned int depth,
                   int32_t alpha, int32_t beta, GameContext *context) {
   GameStatus status;
-  if (depth <= 0 || is_end_game(board, context, board->meta.current_turn, &status)) {
+  if (depth <= 0 ||
+      is_end_game(board, context, board->meta.current_turn, &status)) {
     return evaluate_board(board, color_max, context, depth);
   }
 
@@ -58,10 +59,9 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
              selected_move.src.row, selected_move.src.col,
              selected_move.dest.row, selected_move.dest.col, score);
     } else {
-        *best_move = selected_move;
-        return score;
+      *best_move = selected_move;
+      return score;
     }
-    
   }
 
   int32_t alpha_orig = alpha;
@@ -126,17 +126,21 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
 
 int32_t evaluate_move_ab(ChessBoard *board, ChessColor color_max,
                          ChessColor curr_color, Move move_to_apply,
-                         unsigned int depth, int32_t alpha, int32_t beta, GameContext *context) {
+                         unsigned int depth, int32_t alpha, int32_t beta,
+                         GameContext *context) {
   GameStatus status;
   MoveReport report = apply_search_move(board, move_to_apply);
   if (context != NULL) {
-    increment_position_history_counter(&context->history_counter, board->meta.hash);
+    increment_position_history_counter(&context->history_counter,
+                                       board->meta.hash);
   }
 
-  if (depth <= 0 || is_end_game(board, context, board->meta.current_turn, &status)) {
+  if (depth <= 0 ||
+      is_end_game(board, context, board->meta.current_turn, &status)) {
     int32_t score = evaluate_board(board, color_max, context, depth);
     if (context != NULL) {
-      decrement_position_history_counter(&context->history_counter, board->meta.hash);
+      decrement_position_history_counter(&context->history_counter,
+                                         board->meta.hash);
     }
     undo_move(board, &report);
     return score;
@@ -147,7 +151,8 @@ int32_t evaluate_move_ab(ChessBoard *board, ChessColor color_max,
                             depth - 1, alpha, beta, context);
   // undo move
   if (context != NULL) {
-    decrement_position_history_counter(&context->history_counter, board->meta.hash);
+    decrement_position_history_counter(&context->history_counter,
+                                       board->meta.hash);
   }
   undo_move(board, &report);
   return score;
@@ -157,17 +162,16 @@ static bool _is_endgame_phase(const ChessBoard *board) {
   int total = 0;
   for (int color = 0; color < 2; color++) {
     for (int name = BISHOP; name <= QUEEN; name++) {
-      total += PIECE_COUNT(*board, color, name) *get_piece_value(name);
+      total += PIECE_COUNT(*board, color, name) * get_piece_value(name);
     }
   }
   return total <= 2400;
 }
- 
 
 static int _positional_score(const ChessBoard *board, ChessColor color) {
   bool endgame = _is_endgame_phase(board);
   int score = 0;
- 
+
   for (unsigned int row = 0; row < BOARD_SIZE; row++) {
     for (unsigned int col = 0; col < BOARD_SIZE; col++) {
       Piece piece = board->squares[row][col];
@@ -216,7 +220,8 @@ int32_t evaluate_board(ChessBoard *board, ChessColor color_max,
 
   if (context != NULL) {
     int rep = (int)get_position_history_count(&context->history_counter,
-                                              board->meta.hash) - 1;
+                                              board->meta.hash) -
+              1;
     if (rep > 0) {
       score -= rep * POSITION_REPETITION_PENALTY;
     }

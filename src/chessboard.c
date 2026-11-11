@@ -1,13 +1,12 @@
 #include <assert.h>
 #include <stdbool.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
 
 #include "chessboard.h"
 #include "move_check.h"
 #include "special_move.h"
 #include "transposition_table.h"
-
 
 static void _init_meta(ChessBoard *board);
 static void _init_piece_counts(ChessBoard *board);

@@ -18,7 +18,8 @@ PositionHistoryCounter create_position_history_counter();
 // memory
 void clear_position_history_counter(PositionHistoryCounter *counter);
 void free_position_history_counter(PositionHistoryCounter *counter);
-unsigned int get_position_history_count(const PositionHistoryCounter *counter, uint64_t hash);
+unsigned int get_position_history_count(const PositionHistoryCounter *counter,
+                                        uint64_t hash);
 void increment_position_history_counter(PositionHistoryCounter *counter,
                                         uint64_t hash);
 void decrement_position_history_counter(PositionHistoryCounter *counter,
@@ -28,6 +29,6 @@ void decrement_position_history_counter(PositionHistoryCounter *counter,
 // game history Be aware to add the current position to the history before
 // calling this function, otherwise it will return false
 bool is_threefold_repetition(const PositionHistoryCounter *counter,
-                                     uint64_t hash);
+                             uint64_t hash);
 
 #endif
