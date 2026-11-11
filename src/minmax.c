@@ -39,7 +39,7 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
                   ChessColor curr_color, Move *best_move, unsigned int depth,
                   int32_t alpha, int32_t beta, GameContext *context) {
   GameStatus status;
-  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
+  if (depth <= 0 || is_end_game(board, context, board->meta.current_turn, &status)) {
     return evaluate_board(board, color_max, context, depth);
   }
 
@@ -49,9 +49,19 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
 
 #if ENABLE_TRANS_TABLE
   if (fetch_from_transposition_table(board->meta.hash, &score, &selected_move,
-                                     alpha, beta, depth)) {
-    *best_move = selected_move;
-    return score;
+                                     alpha, beta, depth, color_max)) {
+    if (!is_legal_move(board, selected_move.src, selected_move.dest)) {
+      // The move stored in the transposition table is no longer legal in the
+      // current board state. We will ignore it and continue searching for the
+      // best move.
+      printf("TT Hit but move is illegal (%u, %u) -> (%u, %u) score: %d\n",
+             selected_move.src.row, selected_move.src.col,
+             selected_move.dest.row, selected_move.dest.col, score);
+    } else {
+        *best_move = selected_move;
+        return score;
+    }
+    
   }
 
   int32_t alpha_orig = alpha;
@@ -108,66 +118,7 @@ int32_t minmax_ab(ChessBoard *board, ChessColor color_max,
 
 #if ENABLE_TRANS_TABLE
   add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
-                             alpha_orig, beta_orig);
-#endif
-
-  return best_score;
-}
-
-/* This version that enables the use of many cpu at once, was written by GPT 5.6
- * Luna via VS Code Copilot SDK
- */
-int32_t minmax_ab_parallel(ChessBoard *board, ChessColor color_max,
-                           ChessColor curr_color, Move *best_move,
-                           unsigned int depth, GameContext *context) {
-
-  MoveList legal_moves;
-  GameStatus status;
-  generate_legal_moves(board, curr_color, false, &legal_moves);
-  order_captures_first(&legal_moves);
-
-  int32_t best_score = (curr_color == color_max) ? -INFINITY : INFINITY;
-  Move selected_move;
-  bool has_best = false;
-
-  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
-    return evaluate_board(board, color_max, context, depth);
-  }
-
-#if ENABLE_TRANS_TABLE
-  if (fetch_from_transposition_table(board->meta.hash, &best_score,
-                                     &selected_move, -INFINITY, INFINITY,
-                                     depth)) {
-    *best_move = selected_move;
-    return best_score;
-  }
-#endif
-
-#pragma omp parallel for schedule(dynamic)
-  for (int i = 0; i < (int)legal_moves.count; i++) {
-    Move move = legal_moves.moves[i];
-    ChessBoard board_copy = clone_board(board);
-    int32_t score = evaluate_move_ab(&board_copy, color_max, curr_color, move,
-                                     depth, -INFINITY, INFINITY, context);
-
-#pragma omp critical
-    {
-      bool is_better =
-          (curr_color == color_max) ? score > best_score : score < best_score;
-
-      if (!has_best || is_better) {
-        best_score = score;
-        selected_move = move;
-        has_best = true;
-      }
-    }
-  }
-
-  *best_move = selected_move;
-
-#if ENABLE_TRANS_TABLE
-  add_to_transposition_table(board->meta.hash, best_score, depth, selected_move,
-                             -INFINITY, INFINITY);
+                             alpha_orig, beta_orig, color_max);
 #endif
 
   return best_score;
@@ -182,7 +133,7 @@ int32_t evaluate_move_ab(ChessBoard *board, ChessColor color_max,
     increment_position_history_counter(&context->history_counter, board->meta.hash);
   }
 
-  if (depth <= 0 || is_end_game(board, context, curr_color, &status)) {
+  if (depth <= 0 || is_end_game(board, context, board->meta.current_turn, &status)) {
     int32_t score = evaluate_board(board, color_max, context, depth);
     if (context != NULL) {
       decrement_position_history_counter(&context->history_counter, board->meta.hash);

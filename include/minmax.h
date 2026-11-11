@@ -7,7 +7,8 @@
 #include "game_context.h"
 
 #define INFINITY 10000000
-#define DEPTH 6
+#define MATE_SCORE 10000000
+#define DEPTH 5
 
 int32_t evaluate_board(ChessBoard *board, ChessColor color,
                        GameContext *context, unsigned int depth);

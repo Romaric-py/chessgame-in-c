@@ -1,11 +1,13 @@
 #include <assert.h>
 #include <stdbool.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 #include "chessboard.h"
 #include "move_check.h"
 #include "special_move.h"
 #include "transposition_table.h"
+
 
 static void _init_meta(ChessBoard *board);
 static void _init_piece_counts(ChessBoard *board);
@@ -200,6 +202,16 @@ MoveReport make_move(ChessBoard *board, Coords src_pos, Coords dest_pos) {
   } else if (board->meta.enpassant.is_active) {
     board->meta.enpassant.is_active = false;
   }
+
+  //! DEBUG
+  if (report.captured_piece.name == KING) {
+    printf("Captured king at (%u, %u) due to ", dest_pos.row, dest_pos.col);
+    printf("move (%u, %u) -> (%u, %u)\n", src_pos.row, src_pos.col,
+           dest_pos.row, dest_pos.col);
+    printf("King can't be captured, this is an illegal move!\n");
+    abort();
+  }
+  //! GUBED
 
   _update_roque_flags(board, dest_pos); // if a rook has been captured
   _update_roque_flags(board, src_pos);  // if a rook or a king has been moved

@@ -12,6 +12,7 @@ uint64_t position_piece_hashes[8][8][2][6]; // col/row/color/name
 uint64_t position_enpassant_hashes[8][8];   // col/row
 uint64_t castling_hashes[2][2]; // color/side (0: king side, 1: queen side)
 uint64_t white_turn_hash;
+uint64_t white_perspective_hash;
 TTEntry transposition_table[TT_SIZE];
 
 void init_zobrist_hashes() {
@@ -37,6 +38,9 @@ void init_zobrist_hashes() {
 
   // Player turn hash
   white_turn_hash = (uint64_t)rand64();
+
+  // White perspective hash
+  white_perspective_hash = (uint64_t)rand64();
 
   // En passant hashes
   for (unsigned int row = 0; row < 8; row++) {
@@ -107,7 +111,10 @@ uint64_t hash_board_state(const ChessBoard *board) {
 }
 
 void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
-                                Move best_move, int32_t alpha, int32_t beta) {
+                                Move best_move, int32_t alpha, int32_t beta, ChessColor perspective_color) {
+  if (perspective_color == CHESS_WHITE) {
+    hash ^= white_perspective_hash;
+  }
   size_t index = hash & (TT_SIZE - 1); // works because TT_SIZE is a power of 2
   TTEntry new_entry = {.zobrist_key = hash,
                        .score = score,
@@ -125,7 +132,10 @@ void add_to_transposition_table(uint64_t hash, int score, unsigned int depth,
 
 bool fetch_from_transposition_table(uint64_t hash, int *score, Move *best_move,
                                     int32_t alpha, int32_t beta,
-                                    unsigned int depth) {
+                                    unsigned int depth, ChessColor perspective_color) {
+  if (perspective_color == CHESS_WHITE) {
+    hash ^= white_perspective_hash;
+  }
   size_t index = hash & (TT_SIZE - 1); // works because TT_SIZE is a power of 2
 
   if (transposition_table[index].zobrist_key == 0 ||

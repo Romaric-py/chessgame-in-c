@@ -3,7 +3,7 @@
 
 #include "chessboard.h"
 
-#define CHECK_BONUS 30 // bonus for putting the opponent in check
+#define CHECK_BONUS 0 // bonus for putting the opponent in check
 // I assume that it's will not good to choose losing a valuable piece to put the
 // opponent in check, so the bonus is not too high. The bonus is not too low
 // either, because putting the opponent in check is a good thing. I decide it's
@@ -11,7 +11,7 @@
 // this value as the bonus, which is less than the value of a knight and more than
 // the value of a pawn.
 
-#define POSITION_REPETITION_PENALTY 20 // penalty for threefold repetition
+#define POSITION_REPETITION_PENALTY 10 // penalty for threefold repetition
 
 int pieces_values[6] = {100, 330, 320,
                         500, 900, 10000}; // PAWN, BISHOP, KNIGHT, ROOK, QUEEN, KING
