@@ -37,14 +37,6 @@ bin/benchmark: src/benchmark.c $(SRC)
 benchmark: bin/benchmark
 	./bin/benchmark
 
-# Perft
-bin/perft: src/perft.c $(SRC)
-	@mkdir -p bin
-	$(CC) $(CFLAGS) src/perft.c $(SRC) -o bin/perft
-
-perft: bin/perft
-	./bin/perft
-
 format:
 	find . \( -name "*.c" -o -name "*.h" \) -exec clang-format -i {} +
 
