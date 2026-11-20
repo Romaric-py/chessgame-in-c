@@ -8,7 +8,7 @@
 #include "utils.h"
 #include <stdint.h>
 
-#define ENABLE_TRANS_TABLE 1
+#define ENABLE_TRANS_TABLE 0
 
 static MoveReport apply_search_move(ChessBoard *board, Move move_to_apply) {
   MoveReport report = make_move(board, move_to_apply.src, move_to_apply.dest);

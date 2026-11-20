@@ -134,8 +134,10 @@ void chess_turn(ChessBoard *board, ChessColor color, FuncGetMove black_get_move,
 
   clear_screen();
   display_board(board);
-  printf("Last move: %s ->", coords_to_string(report.src_pos));
-  printf(" %s", coords_to_string(report.dest_pos));
+  char move_str[6];
+  coords_to_string(report.src_pos, move_str);
+  coords_to_string(report.dest_pos, move_str + 2);
+  printf("Last move: %s \n", move_str);
   if (report.captured_piece.name != NONE) {
     printf(" (captured %s %s)",
            (report.captured_piece.color == CHESS_WHITE) ? "White" : "Black",

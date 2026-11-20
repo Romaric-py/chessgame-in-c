@@ -6,7 +6,13 @@ Move create_move(Coords src, Coords dest) {
       .src = src, .dest = dest, .is_capture = false, .promotion = NONE};
 }
 
-void create_movelist(MoveList *list) { list->count = 0; }
+MoveList create_movelist() {
+  MoveList list;
+  list.count = 0;
+  return list;
+}
+
+void init_movelist(MoveList *list) { list->count = 0; }
 
 void add_move(MoveList *list, Move move) {
   if (list->count < MAX_MOVES) {

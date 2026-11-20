@@ -41,6 +41,7 @@ static void benchmark_minmax(void) {
                              .history_counter =
                                  create_position_history_counter()};
       fen_loads(&board, fen_strs[i]);
+      color = board.meta.current_turn;
 
       clock_gettime(CLOCK_MONOTONIC, &start);
       minmax_ab(&board, color, color, &ai_move, depth, -INFINITY, INFINITY,
@@ -69,6 +70,7 @@ static void benchmark_minmax(void) {
 
 int main(void) {
   init_zobrist_hashes();
+  clear_transposition_table();
   benchmark_minmax();
 
   return 0;

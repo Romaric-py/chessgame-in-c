@@ -21,6 +21,9 @@ bool is_enpassant_move(const ChessBoard *board, Coords src_pos,
   // abs(src_pos.col - dest_col.col) = 1
   // if white: row_diff = 1 ; black: row_diff = -1
   Piece attacker = get_piece(board, src_pos);
+  if (attacker.name != PAWN) {
+    return false; // only pawns can do "en passant" move
+  }
   int delta_row = (attacker.color == CHESS_BLACK) ? 1 : -1;
 
   Piece attacked = get_piece(board, create_coords(src_pos.row, dest_pos.col));

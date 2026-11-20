@@ -20,7 +20,7 @@ int max(int x, int y) { return (x > y) ? x : y; }
 int min(int x, int y) { return (x < y) ? x : y; }
 
 Coords string_to_coords(const char *input) {
-  assert(input != NULL && strlen(input) == 2);
+  assert(input != NULL && strlen(input) > 1); // Ensure input is valid
 
   char col_char = input[0];
   char row_char = input[1];
@@ -31,12 +31,25 @@ Coords string_to_coords(const char *input) {
   return create_coords(8 - (row_char - '0'), col_char - 'a');
 }
 
-// ! BUG: This function returns a pointer to a static buffer, which can lead to
-// ! unexpected behavior if called multiple times in a single expression.
-char *coords_to_string(Coords pos) {
-  static char buffer[3];
-  snprintf(buffer, sizeof(buffer), "%c%d", 'a' + pos.col, 8 - pos.row);
-  return buffer;
+void coords_to_string(Coords pos, char *output) {
+  sprintf(output, "%c%d", 'a' + pos.col, 8 - pos.row);
+  output[2] = '\0'; // Ensure null-termination
+}
+
+void move_to_string(Move move, char *output) {
+  coords_to_string(move.src, output);
+  coords_to_string(move.dest, output + 2);
+  output[4] = '\0'; // Ensure null-termination
+}
+
+Move string_to_move(const char *input) {
+  assert(input != NULL && strlen(input) > 3); // 4 for move, 5 if promotion
+
+  Coords src = string_to_coords(input);
+  Coords dest = string_to_coords(input + 2);
+  Move move = create_move(src, dest);
+  move.promotion = (strlen(input) == 5) ? piece_name_from_char(input[4]) : NONE;
+  return move;
 }
 
 void clear_stdin_buffer() {
@@ -48,12 +61,10 @@ void clear_stdin_buffer() {
 void clear_screen() { printf("\033[2J\033[H"); }
 
 void write_move(FILE *moves_file, Coords src_pos, Coords dest_pos) {
-  fprintf(moves_file, "%s ", coords_to_string(src_pos));
-  fprintf(moves_file, "%s\n", coords_to_string(dest_pos));
+  char move_str[5];
+  move_to_string(create_move(src_pos, dest_pos), move_str);
+  fprintf(moves_file, "%s\n", move_str);
   fflush(moves_file);
-  //! DEBUG
-  printf("Move written to file: %s %s\n", coords_to_string(src_pos),
-         coords_to_string(dest_pos));
 }
 
 // check if a position string is valid

@@ -6,13 +6,16 @@
 #include <stdio.h>
 
 #include "chessboard.h"
+#include "movelist.h"
 
 int sign(int x);
 int max(int x, int y);
 int min(int x, int y);
 
 Coords string_to_coords(const char *input);
-char *coords_to_string(Coords pos);
+void coords_to_string(Coords pos, char *output);
+void move_to_string(Move move, char *output);
+Move string_to_move(const char *input);
 
 void clear_stdin_buffer(void);
 void clear_screen(void);
